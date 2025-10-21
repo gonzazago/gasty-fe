@@ -18,6 +18,11 @@ export default function Header() {
     }
   };
 
+    const PAGE_TITLES = {
+        '/dashboard': { title: 'Análisis', subtitle: 'Vista detallada de tu situación financiera' },
+        '/detalle': { title: 'Gasty', subtitle: 'Dashboard Financiero' },
+    };
+
   const { title, subtitle } = getPageTitle();
 
   const handleAddWidget = () => {
