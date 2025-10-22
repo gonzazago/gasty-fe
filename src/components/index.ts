@@ -1,6 +1,7 @@
 // Layout Components
 export { default as Sidebar } from './Sidebar';
 export { default as Header } from './Header';
+export {default as Navigation} from './NavigationWrapper';
 
 // Chart Components
 export { default as BalanceChart } from './BalanceChart';

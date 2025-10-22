@@ -1,16 +1,19 @@
-import {Sidebar, Header} from '@/components';
+// src/app/(dashboard)/layout.tsx
 
-export default function DashboardLayout({children,}: Readonly<{ children: React.ReactNode; }>) {
+import NavigationWrapper from '@/components/NavigationWrapper/NavigationWrapper';
 
+// Este componente es Server Component
+export default function DashboardLayout({
+                                            children,
+                                        }: Readonly<{
+    children: React.ReactNode;
+}>) {
     return (
         <div className="flex h-screen bg-gray-50">
-            <Sidebar/>
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <Header/>
-                <main className="flex-1 overflow-y-auto p-6">
-                    {children}
-                </main>
-            </div>
+            {/* NavigationWrapper se encarga del Sidebar, Header y la lógica de estado/hooks */}
+            <NavigationWrapper>
+                {children}
+            </NavigationWrapper>
         </div>
     );
 }
