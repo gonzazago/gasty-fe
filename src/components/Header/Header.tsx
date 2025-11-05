@@ -4,11 +4,11 @@ interface HeaderProps {
     title: string;
     subtitle: string;
     onOpenAddExpense: () => void;
+    onOpenAddMonth: () => void;
     isDashboardRoute: boolean;
 }
 
-// 💡 NO TIENE 'use client'
-export default function Header({ title, subtitle, onOpenAddExpense, isDashboardRoute }: HeaderProps) {
+export default function Header({title, subtitle, onOpenAddExpense, onOpenAddMonth, isDashboardRoute}: HeaderProps) {
 
     return (
         <div className="bg-white border-b border-gray-200 p-6">
@@ -22,6 +22,7 @@ export default function Header({ title, subtitle, onOpenAddExpense, isDashboardR
                 {/* HeaderActions - Componente de Cliente */}
                 <HeaderActions
                     onOpenAddExpense={onOpenAddExpense}
+                    onOpenAddMonth={onOpenAddMonth}
                     isDashboardRoute={isDashboardRoute}
                 />
 

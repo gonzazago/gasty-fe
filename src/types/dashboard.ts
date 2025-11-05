@@ -61,13 +61,13 @@ export interface ExpenseDetail {
     total: number;
     lefts: number;
   } | null;
-  variation?: number | undefined;
   cardId?: string; // Nueva propiedad para asociar con tarjeta
 }
 
 export interface ExpenseDataDetail {
   month: string;
   expenses: ExpenseDetail[];
+  totalIncome:number
   totalCurrentMonth: number;
   totalPreviousMonth: number;
   totalVariation: number;

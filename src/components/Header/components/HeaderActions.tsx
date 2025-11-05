@@ -1,16 +1,18 @@
 'use client';
 
-import { Search, Bell, Calendar, Plus } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import {Bell, Calendar, Plus, Search} from 'lucide-react';
+import {useRouter} from 'next/navigation';
 
 interface HeaderActionsProps {
     // Función para abrir el modal (ahora es obligatorio pasarla)
     onOpenAddExpense: () => void;
+    onOpenAddMonth: () => void;
     isDashboardRoute: boolean;
 }
 
 export default function HeaderActions({
                                           onOpenAddExpense,
+                                          onOpenAddMonth,
                                           isDashboardRoute,
                                       }: HeaderActionsProps) {
     const router = useRouter();
@@ -31,17 +33,18 @@ export default function HeaderActions({
                     onClick={handleThisMonth}
                     className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="w-4 h-4"/>
                     <span>Este mes</span>
                 </button>
 
                 <div className="flex items-center space-x-3">
                     <button className="p-2 hover:bg-gray-100 rounded-lg">
-                        <Search className="w-5 h-5 text-gray-600" />
+                        <Search className="w-5 h-5 text-gray-600"/>
                     </button>
                     <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                        <Bell className="w-5 h-5 text-gray-600" />
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        <Bell className="w-5 h-5 text-gray-600"/>
+                        <span
+                            className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         3
                     </span>
                     </button>
@@ -70,17 +73,25 @@ export default function HeaderActions({
                             onClick={handleNavigateToDetalle}
                             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4"/>
                             <span>Ver Detalle</span>
                         </button>
                     )}
+
+                    <button
+                        onClick={onOpenAddMonth}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                    >
+                        <Plus className="w-4 h-4"/>
+                        <span>Agregar Mes</span>
+                    </button>
 
                     {/* BOTÓN AGREGAR GASTO (AHORA SIEMPRE VISIBLE) */}
                     <button
                         onClick={onOpenAddExpense}
                         className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4"/>
                         <span>Agregar Gasto</span>
                     </button>
                 </div>

@@ -4,7 +4,7 @@ export const metricsData: MetricData[] = [
   {
     title: 'Total Ingresos',
     value: '$8,500.00',
-    currency: 'USD',
+    currency: 'ARS',
     change: {
       percentage: '8.5%',
       isPositive: true,
@@ -18,7 +18,7 @@ export const metricsData: MetricData[] = [
   {
     title: 'Total Gastos',
     value: '$6,222.00',
-    currency: 'USD',
+    currency: 'ARS',
     change: {
       percentage: '3.8%',
       isPositive: false,
@@ -32,7 +32,7 @@ export const metricsData: MetricData[] = [
   {
     title: 'Resto',
     value: '$2,278.00',
-    currency: 'USD',
+    currency: 'ARS',
     change: {
       percentage: '15.2%',
       isPositive: true,

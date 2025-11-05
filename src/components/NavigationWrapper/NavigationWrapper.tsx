@@ -2,18 +2,22 @@
 
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Sidebar, Header, AddExpenseForm } from '@/components';
-import { ExpenseDetail, ExpenseDataDetail } from '@/types/dashboard';
+import {useEffect, useState} from 'react';
+import {usePathname, useRouter} from 'next/navigation';
+import {AddExpenseForm, Header, Sidebar} from '@/components';
+import {Card, ExpenseDetail} from '@/types/dashboard';
+import {addExpense, addMonth} from "@/actions/expenses";
+import AddMonthForm from "@/components/forms/AddMonthForm";
+import {getAllCards} from "@/actions/banksAndCards";
 
 interface NavigationWrapperProps {
     children: React.ReactNode;
+    initialCards: Card[];
 }
 
 // Lógica centralizada para determinar el título y contexto de la página
 const getPageContext = (path: string) => {
-    const context = { title: 'Panel', subtitle: 'Bienvenido', isDashboardRoute: false };
+    const context = {title: 'Panel', subtitle: 'Bienvenido', isDashboardRoute: false};
 
     if (path.startsWith('/dashboard')) {
         context.title = 'Análisis';
@@ -31,29 +35,41 @@ const getPageContext = (path: string) => {
     return context;
 };
 
-export default function NavigationWrapper({ children }: NavigationWrapperProps) {
+export default function NavigationWrapper({children,initialCards}: NavigationWrapperProps) {
     const pathname = usePathname();
-    const { title, subtitle, isDashboardRoute } = getPageContext(pathname);
+    const {title, subtitle, isDashboardRoute} = getPageContext(pathname);
+    const router = useRouter();
 
     const [showAddExpense, setShowAddExpense] = useState(false);
+    const [showAddMonth, setShowAddMonth] = useState(false);
+
 
     // Handler para la simulación de Server Action
-    const handleAddExpense = (expense: ExpenseDetail) => {
+    const handleAddExpense = async (expense: ExpenseDetail) => {
         // 💡 Aquí se llamaría a la Server Action (ej. createExpense(expense))
-        console.log('Server Action Mock: Adding expense:', expense);
+        await addExpense(expense);
         setShowAddExpense(false);
+        router.refresh()
     };
+
+    const handleAddMonth = async (month: string, totalIncome: number) => {
+        await addMonth(month, totalIncome)
+        setShowAddMonth(false)
+        router.refresh()
+
+    }
 
     return (
         <>
             {/* 1. Sidebar (SC) - Usa el path del cliente para el link activo */}
-            <Sidebar currentPath={pathname} />
+            <Sidebar currentPath={pathname}/>
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* 2. Header (SC) - Recibe los datos y handlers del wrapper */}
                 <Header
                     title={title}
                     subtitle={subtitle}
+                    onOpenAddMonth={() => setShowAddMonth(true)}
                     onOpenAddExpense={() => setShowAddExpense(true)}
                     isDashboardRoute={isDashboardRoute}
                 />
@@ -62,11 +78,19 @@ export default function NavigationWrapper({ children }: NavigationWrapperProps) 
                 </main>
             </div>
 
+            {showAddMonth && (
+                <AddMonthForm
+                    onClose={() => setShowAddMonth(false)}
+                    onAddMonth={handleAddMonth} // Pasa el handler de mutación
+                />
+            )}
+
             {/* 3. Modal (Gestionado por el wrapper) */}
             {showAddExpense && (
                 <AddExpenseForm
                     onClose={() => setShowAddExpense(false)}
                     onAddExpense={handleAddExpense} // Pasa el handler de mutación
+                    cards={initialCards}
                 />
             )}
         </>
