@@ -53,12 +53,6 @@ export default function NavigationWrapper({
         month: month.month // El string 'month' (ej: "Noviembre 2024")
     }));
 
-    // Handler para 'addExpense' (firma ya correcta)
-    const handleAddExpense = async (monthId: string, expense: ExpenseDetail) => {
-        await addExpense(monthId, expense);
-        router.refresh();
-        setShowAddExpense(false);
-    };
 
     // 3. Handler para 'addMonth' (firma actualizada)
     const handleAddMonth = async (monthIndex: number, year: number, totalIncome: number) => {

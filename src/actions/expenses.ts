@@ -25,7 +25,7 @@ export async function getMetricsData(): Promise<MetricData[]> {
     const balanceChange = prevBalance > 0 ? ((balance - prevBalance) / prevBalance) * 100 : (balance > 0 ? 100 : 0);
 
     // 2. Generar las Métricas dinámicamente
-    const metricsData: MetricData[] = [
+    return [
         {
             title: 'Total Ingresos',
             value: `$${totalIncome.toLocaleString('es-AR')}`,
@@ -60,8 +60,6 @@ export async function getMetricsData(): Promise<MetricData[]> {
             details: {transactions: 0, categories: 0}
         }
     ];
-
-    return metricsData;
 }
 
 // Acción para obtener datos de balance
@@ -112,13 +110,11 @@ export async function getMonthlyData(): Promise<MonthlyData[]> {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // 1. Mapear todos los meses de tus datos
-    const monthlyData: MonthlyData[] = expenseDetailsByMonth.map(monthData => ({
+    return expenseDetailsByMonth.map(monthData => ({
         month: monthData.month.split(' ')[0].substring(0, 3), // "Octubre 2025" -> "Oct"
         expense: monthData.totalCurrentMonth,
         budget: monthData.totalIncome // Asumimos que el ingreso es el presupuesto
     }));
-
-    return monthlyData;
 }
 
 // Acción para obtener datos de gastos detallados por mes

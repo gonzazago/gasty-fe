@@ -239,7 +239,7 @@ export default function DetalleClient({initialData, initialCards}: DetalleClient
                 keyExtractor={(row: ProcessedRow) =>
                     row.type === 'CARD_SUMMARY' ? row.cardId : `${row.expense.place}-${row.expense.amount}-${Math.random()}`
                 }
-                renderRow={(row, cols) => renderCustomRow(row as ProcessedRow)}
+                renderRow={(row) => renderCustomRow(row as ProcessedRow)}
             />
         </>
     );
