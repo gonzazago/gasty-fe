@@ -1,47 +1,54 @@
-// src/components/AddMonthForm/AddMonthForm.tsx
+// src/components/forms/AddMonthForm.tsx
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { X, Plus } from 'lucide-react';
+import {FormInput, FormSelect} from "@/components/forms/components";
 
-// 1. Props actualizadas
+
 interface AddMonthFormProps {
     onClose: () => void;
-    onAddMonth: (monthName: string, totalIncome:number) => void;
+    onAddMonth: (monthIndex: number, year: number, totalIncome:number) => void;
 }
 
-// 2. FormData actualizado
 interface FormData {
-    month: string;
+    month: number;
+    year: number;
     totalIncome: number;
 }
 
-// 3. Schema actualizado
+const monthOptions = [
+    { value: 0, name: 'Enero' }, { value: 1, name: 'Febrero' },
+    { value: 2, name: 'Marzo' }, { value: 3, name: 'Abril' },
+    { value: 4, name: 'Mayo' }, { value: 5, name: 'Junio' },
+    { value: 6, name: 'Julio' }, { value: 7, name: 'Agosto' },
+    { value: 8, name: 'Septiembre' }, { value: 9, name: 'Octubre' },
+    { value: 10, name: 'Noviembre' }, { value: 11, name: 'Diciembre' },
+];
+
+const currentYear = new Date().getFullYear();
+const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + i);
+
 const schema = yup.object({
-    month: yup.string().required('El nombre del mes es obligatorio (Ej: Diciembre 2024)'),
-    totalIncome: yup.number() // <-- Nueva validación
-        .min(0, 'El ingreso debe ser 0 o mayor')
-        .required('El ingreso inicial es obligatorio'),
+    month: yup.number().min(0).max(11).required('El mes es obligatorio'),
+    year: yup.number().min(new Date().getFullYear()).required('El año es obligatorio'),
+    totalIncome: yup.number().min(0).required('El ingreso inicial es obligatorio'),
 });
 
 export default function AddMonthForm({ onClose, onAddMonth }: AddMonthFormProps) {
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        reset,
-    } = useForm<FormData>({
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
         resolver: yupResolver(schema),
         defaultValues: {
-            month: '',
+            month: new Date().getMonth(),
+            year: currentYear,
+            totalIncome: 0,
         },
     });
 
-    // 4. onSubmit actualizado
     const onSubmit = (data: FormData) => {
-        onAddMonth(data.month,data.totalIncome);
+        onAddMonth(data.month, data.year, data.totalIncome);
         reset();
         onClose();
     };
@@ -51,7 +58,6 @@ export default function AddMonthForm({ onClose, onAddMonth }: AddMonthFormProps)
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-y-auto">
                 <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center justify-between">
-                        {/* 5. Título actualizado */}
                         <h2 className="text-2xl font-bold text-gray-900">Agregar Nuevo Mes</h2>
                         <button
                             onClick={onClose}
@@ -63,39 +69,49 @@ export default function AddMonthForm({ onClose, onAddMonth }: AddMonthFormProps)
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-                    {/* 6. Campos actualizados (solo 1 campo) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Nombre del Mes *
-                        </label>
-                        <input
-                            type="text"
-                            {...register('month')}
-                            className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="Ej: Diciembre 2024"
-                        />
-                        {errors.month && (
-                            <p className="text-red-500 text-sm mt-1">{errors.month.message}</p>
-                        )}
-                    </div>
-                    {/* ✅ NUEVO CAMPO: Ingreso Inicial */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Ingreso Inicial *
-                        </label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            {...register('totalIncome', { valueAsNumber: true })}
-                            className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="0.00"
-                        />
-                        {errors.totalIncome && (
-                            <p className="text-red-500 text-sm mt-1">{errors.totalIncome.message}</p>
-                        )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        {/* ✅ Mes (Refactorizado) */}
+                        <FormSelect
+                            label="Mes *"
+                            name="month"
+                            register={register}
+                            errors={errors}
+                            registerOptions={{ valueAsNumber: true }}
+                        >
+                            {monthOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.name}</option>
+                            ))}
+                        </FormSelect>
+
+                        {/* ✅ Año (Refactorizado) */}
+                        <FormSelect
+                            label="Año *"
+                            name="year"
+                            register={register}
+                            errors={errors}
+                            registerOptions={{ valueAsNumber: true }}
+                        >
+                            {yearOptions.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </FormSelect>
                     </div>
 
-                    {/* 7. Botones actualizados */}
+                    {/* ✅ Ingreso Inicial (Refactorizado) */}
+                    <FormInput
+                        label="Ingreso Inicial *"
+                        name="totalIncome"
+                        register={register}
+                        errors={errors}
+                        registerOptions={{ valueAsNumber: true }}
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        prefix="$"
+                    />
+
+                    {/* Botones (Se mantienen igual) */}
                     <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                         <button
                             type="button"

@@ -1,17 +1,24 @@
-import { Sidebar, Header, DetalleClient } from '@/components';
+// src/app/(dashboard)/detalle/page.tsx (Corregido)
+
+// 1. Importa la acción que faltaba
+import { getAllCards } from '@/actions/banksAndCards';
 import { getExpenseDetailsByMonth } from '@/actions/expenses';
+import { DetalleClient } from '@/components'; // 'Sidebar' y 'Header' no son necesarios aquí
 
 export default async function DetallePage() {
-  // Obtener datos usando Server Actions
-  const expensesData = await getExpenseDetailsByMonth();
 
-  return (
-    <div className="flex h-screen bg-gray-50">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-6">
-          <DetalleClient initialData={expensesData} />
-        </main>
-      </div>
-    </div>
-  );
+    // 2. Obtén AMBOS datos en paralelo (SSR)
+    const [expensesData, cardsData] = await Promise.all([
+        getExpenseDetailsByMonth(),
+        getAllCards()
+    ]);
+
+    return (
+        // El layout (layout.tsx) ya envuelve esto con el NavigationWrapper
+        // Así que aquí solo renderizamos el contenido de la página
+        <DetalleClient
+            initialData={expensesData}
+            initialCards={cardsData} // 3. Pasa los cards al cliente
+        />
+    );
 }

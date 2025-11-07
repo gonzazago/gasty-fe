@@ -12,8 +12,7 @@ export { default as MonthlyExpenseChart } from './MonthlyExpenseChart';
 export { default as MetricCard } from './MetricCard';
 
 // Table Components
-export { default as GenericTable, VariationCell, InstallmentsCell, FixedCell } from './GenericTable';
-export type { Column } from './GenericTable';
+export * from './Table'; // Esto ahora importa desde './Table/index.ts'
 
 // Page Components
 export { default as DetalleClient } from './DetalleClient';

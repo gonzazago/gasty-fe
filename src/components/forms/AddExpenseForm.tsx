@@ -1,19 +1,25 @@
-// src/components/AddExpenseForm/AddExpenseForm.tsx
+// src/components/forms/AddExpenseForm.tsx
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { X, Plus, CreditCard } from 'lucide-react';
-import { ExpenseDetail, Card } from '@/types/dashboard';
+import { CreditCard, Plus, X } from 'lucide-react';
+import { Card, ExpenseDataDetail, ExpenseDetail } from '@/types/dashboard';
+import { FormInput, FormSelect } from '@/components/forms/components';
 
+
+// --- Interfaces, Schema y Categorías ---
 interface AddExpenseFormProps {
     onClose: () => void;
-    onAddExpense: (expense: ExpenseDetail) => void;
+    onAddExpense: (monthId: string, expense: ExpenseDetail) => void;
     cards?: Card[];
+    months: Pick<ExpenseDataDetail, 'id' | 'month'>[];
 }
 
 interface FormData {
+    monthId: string;
     category: string;
     place: string;
     amount: number;
@@ -25,13 +31,13 @@ interface FormData {
     cardId?: string;
 }
 
-// 1. Schema actualizado con validación condicional para cardId
 const schema = yup.object({
+    monthId: yup.string().required('Debes seleccionar un mes'),
     category: yup.string().required('La categoría es obligatoria'),
     place: yup.string().required('El lugar/descripción es obligatorio'),
     amount: yup.number().positive('El monto debe ser mayor a 0').required('El monto es obligatorio'),
     date: yup.string().required('La fecha es obligatoria'),
-    fixed: yup.boolean().required(),
+    fixed: yup.boolean().required(), // Esta validación ahora funcionará
     hasInstallments: yup.boolean().required(),
     currentInstallment: yup.number().when('hasInstallments', {
         is: true,
@@ -40,10 +46,10 @@ const schema = yup.object({
     }),
     totalInstallments: yup.number().when('hasInstallments', {
         is: true,
-        then: (schema) => schema.required('El total de cuotas es obligatorio').positive('Debe ser mayor a 0'),
+        then: (schema) => schema.required('El total de cuotas es obligatorio').positive('Debe ser mayor a 0')
+            .min(yup.ref('currentInstallment'), 'El total debe ser mayor o igual a la cuota actual'),
         otherwise: (schema) => schema.notRequired()
     }),
-    // ✅ NUEVO: Si es 'Tarjetas', cardId es obligatorio
     cardId: yup.string().when('category', {
         is: (val: string) => val === 'Tarjetas',
         then: (schema) => schema.required('Debes seleccionar la tarjeta correspondiente'),
@@ -56,21 +62,25 @@ const categories = [
     'Entretenimiento', 'Salud', 'Educación', 'Servicios', 'Otros'
 ];
 
-export default function AddExpenseForm({ onClose, onAddExpense, cards = [] }: AddExpenseFormProps) {
+const toInputDate = (date: Date) => date.toISOString().split('T')[0];
+
+export default function AddExpenseForm({ onClose, onAddExpense, cards = [], months = [] }: AddExpenseFormProps) {
     const {
         register,
         handleSubmit,
         formState: { errors },
         reset,
-        watch
+        watch,
+        setValue
     } = useForm<FormData>({
         resolver: yupResolver(schema),
         defaultValues: {
+            monthId: '',
             category: '',
             place: '',
             amount: 0,
-            date: new Date().toISOString().split('T')[0],
-            fixed: false,
+            date: '',
+            fixed: false, // Default es booleano 'false'
             hasInstallments: false,
             currentInstallment: 1,
             totalInstallments: 1,
@@ -80,25 +90,59 @@ export default function AddExpenseForm({ onClose, onAddExpense, cards = [] }: Ad
 
     const hasInstallments = watch('hasInstallments');
     const selectedCardId = watch('cardId');
-    // 2. Observamos la categoría seleccionada
     const selectedCategory = watch('category');
 
+    // --- Lógica de Fecha Dinámica (sin cambios) ---
+    const watchedMonthId = watch('monthId');
+    const [dateConfig, setDateConfig] = useState({ min: '', max: '' });
+
+    useEffect(() => {
+        if (watchedMonthId) {
+            const parts = watchedMonthId.split('-');
+            if (parts.length === 3) {
+                const monthIndex = parseInt(parts[1], 10) - 1;
+                const year = parseInt(parts[2], 10);
+
+                if (!isNaN(monthIndex) && !isNaN(year)) {
+                    const firstDay = new Date(year, monthIndex, 1);
+                    const lastDay = new Date(year, monthIndex + 1, 0);
+                    const minDate = toInputDate(firstDay);
+                    const maxDate = toInputDate(lastDay);
+
+                    setDateConfig({ min: minDate, max: maxDate });
+                    setValue('date', minDate);
+                    return;
+                }
+            }
+        }
+        setDateConfig({ min: '', max: '' });
+        setValue('date', '');
+    }, [watchedMonthId, setValue]);
+
+    // --- onSubmit (sin cambios) ---
     const onSubmit = (data: FormData) => {
+        const { monthId, ...expenseData } = data;
+
+        let finalAmount = expenseData.amount;
+        if (expenseData.hasInstallments && expenseData.totalInstallments && expenseData.totalInstallments > 0) {
+            finalAmount = expenseData.amount / expenseData.totalInstallments;
+        }
+
         const expense: ExpenseDetail = {
-            category: data.category,
-            place: data.place,
-            amount: data.amount,
-            date: data.date,
-            fixed: data.fixed,
-            split: data.hasInstallments && data.currentInstallment && data.totalInstallments ? {
-                current: data.currentInstallment,
-                total: data.totalInstallments,
-                lefts: data.totalInstallments - data.currentInstallment
+            category: expenseData.category,
+            place: expenseData.place,
+            amount: finalAmount,
+            date: expenseData.date,
+            fixed: expenseData.fixed, // 'fixed' ya es un booleano gracias al 'setValueAs'
+            split: expenseData.hasInstallments && expenseData.currentInstallment && expenseData.totalInstallments ? {
+                current: expenseData.currentInstallment,
+                total: expenseData.totalInstallments,
+                lefts: expenseData.totalInstallments - expenseData.currentInstallment
             } : null,
-            cardId: data.cardId || undefined
+            cardId: expenseData.cardId || undefined
         };
 
-        onAddExpense(expense);
+        onAddExpense(monthId, expense);
         reset();
         onClose();
     };
@@ -116,33 +160,44 @@ export default function AddExpenseForm({ onClose, onAddExpense, cards = [] }: Ad
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+
+                    <FormSelect
+                        label="Asignar al Mes *"
+                        name="monthId"
+                        register={register}
+                        errors={errors}
+                    >
+                        <option value="">Seleccionar mes...</option>
+                        {months.map((month) => (
+                            <option key={month.id} value={month.id}>
+                                {month.month}
+                            </option>
+                        ))}
+                    </FormSelect>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Categoría y Tarjeta Condicional (sin cambios) */}
+                        <div className="space-y-6">
+                            <FormSelect
+                                label="Categoría *"
+                                name="category"
+                                register={register}
+                                errors={errors}
+                            >
+                                <option value="">Seleccionar categoría</option>
+                                {categories.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </FormSelect>
 
-                        {/* Categoría */}
-                        <div className="space-y-6"> {/* Contenedor para agrupar Categoría y Tarjeta si aplica */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Categoría *</label>
-                                <select
-                                    {...register('category')}
-                                    className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                >
-                                    <option value="">Seleccionar categoría</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                                {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>}
-                            </div>
-
-                            {/* ✅ NUEVO: Dropdown ESPECÍFICO si la categoría es 'Tarjetas' */}
                             {selectedCategory === 'Tarjetas' && (
                                 <div className="animate-in fade-in slide-in-from-top-2">
-                                    <label className="block text-sm font-medium text-purple-700 mb-2">
-                                        ¿Qué tarjeta estás pagando? *
-                                    </label>
-                                    <select
-                                        {...register('cardId')}
-                                        className="w-full px-3 py-2 border-2 border-purple-100 bg-purple-50 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    <FormSelect
+                                        label="¿Qué tarjeta estás pagando? *"
+                                        name="cardId"
+                                        register={register}
+                                        errors={errors}
+                                        className="border-2 border-purple-100 bg-purple-50"
                                     >
                                         <option value="">Seleccionar tarjeta</option>
                                         {cards.map((card) => (
@@ -150,55 +205,52 @@ export default function AddExpenseForm({ onClose, onAddExpense, cards = [] }: Ad
                                                 {card.name} (**** {card.lastFourDigits})
                                             </option>
                                         ))}
-                                    </select>
-                                    {errors.cardId && <p className="text-red-500 text-sm mt-1">{errors.cardId.message}</p>}
+                                    </FormSelect>
                                 </div>
                             )}
                         </div>
 
-                        {/* Lugar/Descripción */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Lugar/Descripción *</label>
-                            <input
-                                type="text"
-                                {...register('place')}
-                                className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder={selectedCategory === 'Tarjetas' ? "Ej: Resumen Noviembre" : "Ej: Supermercado..."}
-                            />
-                            {errors.place && <p className="text-red-500 text-sm mt-1">{errors.place.message}</p>}
-                        </div>
+                        {/* Lugar/Descripción (sin cambios) */}
+                        <FormInput
+                            label="Lugar/Descripción *"
+                            name="place"
+                            register={register}
+                            errors={errors}
+                            type="text"
+                            placeholder={selectedCategory === 'Tarjetas' ? "Ej: Resumen Noviembre" : "Ej: Supermercado..."}
+                        />
 
-                        {/* Monto */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Monto *</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-2 text-gray-500">$</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    {...register('amount', { valueAsNumber: true })}
-                                    className="w-full pl-7 pr-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                    placeholder="0.00"
-                                />
-                            </div>
-                            {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>}
-                        </div>
+                        {/* Monto (sin cambios) */}
+                        <FormInput
+                            label={hasInstallments ? "Monto TOTAL (a dividir)" : "Monto *"}
+                            name="amount"
+                            register={register}
+                            errors={errors}
+                            registerOptions={{ valueAsNumber: true }}
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            prefix="$"
+                        />
 
-                        {/* Fecha */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
-                            <input
-                                type="date"
-                                {...register('date')}
-                                className="w-full px-3 py-2 border text-gray-900 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
-                        </div>
+                        {/* Fecha (sin cambios) */}
+                        <FormInput
+                            label="Fecha *"
+                            name="date"
+                            register={register}
+                            errors={errors}
+                            type="date"
+                            min={dateConfig.min}
+                            max={dateConfig.max}
+                            disabled={!watchedMonthId}
+                            className={!watchedMonthId ? "bg-gray-100" : ""}
+                        />
                     </div>
 
-                    {/* Selector de Tarjeta GENÉRICO (Solo si NO es categoría 'Tarjetas') */}
+                    {/* Selector de Tarjeta GENÉRICO (sin cambios) */}
                     {cards.length > 0 && selectedCategory !== 'Tarjetas' && (
-                        <div className={`p-4 rounded-lg border ${selectedCardId ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
+                        <div
+                            className={`p-4 rounded-lg border ${selectedCardId ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
                             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
                                 <CreditCard className="w-4 h-4 mr-2 text-gray-500" />
                                 Pagar con Tarjeta (Opcional)
@@ -214,28 +266,45 @@ export default function AddExpenseForm({ onClose, onAddExpense, cards = [] }: Ad
                                     </option>
                                 ))}
                             </select>
-                            <p className="text-xs text-gray-500 mt-1">
-                                Selecciona si este gasto fue realizado con una de tus tarjetas de crédito.
-                            </p>
                         </div>
                     )}
 
-                    {/* Tipo de Gasto */}
+                    {/* ✅ --- TIPO DE GASTO (CORREGIDO) --- */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-3">Tipo de Gasto</label>
                         <div className="flex space-x-4">
+                            {/* Usamos `value="false"` y `value="true"` (strings)
+                              react-hook-form comparará esto con el 'defaultValue' (booleano 'false') y marcará el correcto.
+                              'setValueAs' convierte el string del 'value' de nuevo a booleano.
+                            */}
                             <label className="flex items-center cursor-pointer">
-                                <input type="radio" {...register('fixed')} value="false" className="mr-2" />
+                                <input
+                                    type="radio"
+                                    {...register('fixed', {
+                                        setValueAs: (v) => v === 'true' // Convierte a booleano
+                                    })}
+                                    value="false" // Valor string
+                                    className="mr-2"
+                                />
                                 <span className="text-sm text-gray-700">Variable</span>
                             </label>
                             <label className="flex items-center cursor-pointer">
-                                <input type="radio" {...register('fixed')} value="true" className="mr-2" />
+                                <input
+                                    type="radio"
+                                    {...register('fixed', {
+                                        setValueAs: (v) => v === 'true' // Convierte a booleano
+                                    })}
+                                    value="true" // Valor string
+                                    className="mr-2"
+                                />
                                 <span className="text-sm text-gray-700">Fijo</span>
                             </label>
                         </div>
+                        {/* El error de 'fixed' no se mostrará, pero lo dejamos por si acaso */}
+                        {errors.fixed && <p className="text-red-500 text-sm mt-1">{errors.fixed.message}</p>}
                     </div>
 
-                    {/* Cuotas */}
+                    {/* Cuotas (sin cambios) */}
                     <div>
                         <label className="flex items-center mb-3 cursor-pointer">
                             <input
@@ -247,37 +316,40 @@ export default function AddExpenseForm({ onClose, onAddExpense, cards = [] }: Ad
                         </label>
 
                         {hasInstallments && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Cuota Actual *</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        {...register('currentInstallment', { valueAsNumber: true })}
-                                        className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                    />
-                                    {errors.currentInstallment && <p className="text-red-500 text-sm mt-1">{errors.currentInstallment.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Total de Cuotas *</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        {...register('totalInstallments', { valueAsNumber: true })}
-                                        className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                    />
-                                    {errors.totalInstallments && <p className="text-red-500 text-sm mt-1">{errors.totalInstallments.message}</p>}
-                                </div>
+                            <div
+                                className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
+
+                                <FormInput
+                                    label="Cuota Actual *"
+                                    name="currentInstallment"
+                                    register={register}
+                                    errors={errors}
+                                    registerOptions={{ valueAsNumber: true }}
+                                    type="number"
+                                    min="1"
+                                />
+
+                                <FormInput
+                                    label="Total de Cuotas *"
+                                    name="totalInstallments"
+                                    register={register}
+                                    errors={errors}
+                                    registerOptions={{ valueAsNumber: true }}
+                                    type="number"
+                                    min="1"
+                                />
                             </div>
                         )}
                     </div>
 
-                    {/* Botones */}
+                    {/* Botones (sin cambios) */}
                     <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                        <button type="button" onClick={onClose} className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <button type="button" onClick={onClose}
+                                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                             Cancelar
                         </button>
-                        <button type="submit" className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2">
+                        <button type="submit"
+                                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2">
                             <Plus className="w-4 h-4" />
                             <span>Agregar Gasto</span>
                         </button>

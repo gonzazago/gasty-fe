@@ -1,13 +1,65 @@
 'use server';
 import {revalidatePath} from 'next/cache'; // <-- Importar revalidatePath
 import {expenseDetailsByMonth, expenseDetailsData} from '@/data/expenseDetailsData';
-import {balanceData, expenseData, metricsData, monthlyData} from '@/data/mockData';
+import {balanceData} from '@/data/mockData';
 import {BalanceData, ExpenseData, ExpenseDataDetail, ExpenseDetail, MetricData, MonthlyData} from '@/types/dashboard';
 
 // Acción para obtener métricas del dashboard
 export async function getMetricsData(): Promise<MetricData[]> {
     // Simular delay de API
     await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 1. Obtener el mes más reciente de tus datos
+    const currentMonthData = expenseDetailsByMonth[expenseDetailsByMonth.length - 1];
+
+    if (!currentMonthData) return []; // Manejar si no hay datos
+
+    const totalIncome = currentMonthData.totalIncome;
+    const totalExpenses = currentMonthData.totalCurrentMonth;
+    const balance = totalIncome - totalExpenses;
+
+    const prevBalance = currentMonthData.totalPreviousMonth
+        ? currentMonthData.totalIncome - currentMonthData.totalPreviousMonth // Asume mismo ingreso
+        : 0;
+
+    const balanceChange = prevBalance > 0 ? ((balance - prevBalance) / prevBalance) * 100 : (balance > 0 ? 100 : 0);
+
+    // 2. Generar las Métricas dinámicamente
+    const metricsData: MetricData[] = [
+        {
+            title: 'Total Ingresos',
+            value: `$${totalIncome.toLocaleString('es-AR')}`,
+            currency: 'ARS',
+            change: {
+                percentage: '0.0%', // No tenemos historial de ingresos
+                isPositive: true,
+                description: `Mes de ${currentMonthData.month}`
+            },
+            details: {transactions: 0, categories: 0} // Podríamos calcular esto si quisiéramos
+        },
+        {
+            title: 'Total Gastos',
+            value: `$${totalExpenses.toLocaleString('es-AR')}`,
+            currency: 'ARS',
+            change: {
+                percentage: `${currentMonthData.totalVariation.toFixed(1)}%`,
+                isPositive: currentMonthData.totalVariation <= 0, // Menos gasto es positivo
+                description: 'vs mes anterior'
+            },
+            details: {transactions: currentMonthData.expenses.length, categories: 0}
+        },
+        {
+            title: 'Resto',
+            value: `$${balance.toLocaleString('es-AR')}`,
+            currency: 'ARS',
+            change: {
+                percentage: `${balanceChange.toFixed(1)}%`,
+                isPositive: balanceChange >= 0,
+                description: 'vs mes anterior'
+            },
+            details: {transactions: 0, categories: 0}
+        }
+    ];
 
     return metricsData;
 }
@@ -22,16 +74,49 @@ export async function getBalanceData(): Promise<BalanceData[]> {
 
 // Acción para obtener datos de gastos por tipo
 export async function getExpenseData(): Promise<ExpenseData[]> {
-    // Simular delay de API
     await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 1. Obtener gastos del mes más reciente
+    const currentMonthData = expenseDetailsByMonth[expenseDetailsByMonth.length - 1];
+    if (!currentMonthData) return [];
+
+    // 2. Agrupar gastos por categoría
+    const expensesByCategory = new Map<string, number>();
+    for (const expense of currentMonthData.expenses) {
+        const currentAmount = expensesByCategory.get(expense.category) || 0;
+        expensesByCategory.set(expense.category, currentAmount + expense.amount);
+    }
+
+    // 3. Convertir al formato de gráfico (ExpenseData)
+    const colors = ['#9333ea', '#c084fc', '#7e22ce', '#a855f7', '#6b21a8'];
+    const totalExpenses = currentMonthData.totalCurrentMonth;
+
+    const expenseData: ExpenseData[] = [];
+    let colorIndex = 0;
+
+    for (const [name, value] of expensesByCategory.entries()) {
+        expenseData.push({
+            name: name,
+            value: value,
+            color: colors[colorIndex % colors.length],
+            percentage: (value / totalExpenses) * 100
+        });
+        colorIndex++;
+    }
 
     return expenseData;
 }
 
 // Acción para obtener datos mensuales
 export async function getMonthlyData(): Promise<MonthlyData[]> {
-    // Simular delay de API
     await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 1. Mapear todos los meses de tus datos
+    const monthlyData: MonthlyData[] = expenseDetailsByMonth.map(monthData => ({
+        month: monthData.month.split(' ')[0].substring(0, 3), // "Octubre 2025" -> "Oct"
+        expense: monthData.totalCurrentMonth,
+        budget: monthData.totalIncome // Asumimos que el ingreso es el presupuesto
+    }));
 
     return monthlyData;
 }
@@ -87,54 +172,33 @@ export async function getTotalExpensesForMonth(monthIndex: number): Promise<{
 }
 
 // ✅ ACCIÓN 'addExpense' CORREGIDA
-export async function addExpense(expense: ExpenseDetail): Promise<void> {
+export async function addExpense(monthId: string, expense: ExpenseDetail): Promise<void> {
     // Simular delay de API
     await new Promise(resolve => setTimeout(resolve, 100));
-
-    // 2. Obtener el mes y año de la fecha del gasto
-    // new Date() maneja 'YYYY-MM-DD' correctamente
-    const dateObj = new Date(expense.date);
-
-    // 3. Formatear el string del mes (Ej: "Noviembre 2025")
-    // Importante: 'es-ES' para el nombre del mes en español
-    const monthName = dateObj.toLocaleString('es-ES', { month: 'long', timeZone: 'UTC' });
-    const year = dateObj.getUTCFullYear();
-
-    // Capitalizar la primera letra (ej: "noviembre" -> "Noviembre")
-    const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-    const targetMonthString = `${capitalizedMonth} ${year}`;
-
-    // 4. Encontrar el mes correspondiente en la "base de datos"
+// 1. Encontrar el mes por ID (mucho más rápido y fiable)
     const targetMonthData = expenseDetailsByMonth.find(
-        (data) => data.month === targetMonthString
+        (data) => data.id === monthId
     );
 
-    // 5. Si se encuentra el mes, agregar el gasto y recalcular
     if (targetMonthData) {
-        // Agregar el gasto al array de ese mes
+        // 2. Agregar el gasto
         targetMonthData.expenses.push(expense);
 
-        // Recalcular el total de gastos para ESE mes
-        const newTotal = targetMonthData.expenses.reduce(
-            (sum, exp) => sum + exp.amount,
-            0
-        );
+        // 3. Recalcular totales
+        const newTotal = targetMonthData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
         targetMonthData.totalCurrentMonth = newTotal;
 
-        // (Opcional) Recalcular la variación de ese mes
         const prevTotal = targetMonthData.totalPreviousMonth;
         if (prevTotal > 0) {
             targetMonthData.totalVariation = ((newTotal - prevTotal) / prevTotal) * 100;
         } else if (newTotal > 0) {
-            targetMonthData.totalVariation = 100; // Si el anterior era 0
+            targetMonthData.totalVariation = 100;
         } else {
-            targetMonthData.totalVariation = 0; // Si ambos son 0
+            targetMonthData.totalVariation = 0;
         }
 
     } else {
-        // Manejar el caso donde el mes no existe (aunque no debería pasar si la UI está bien)
-        console.error(`Error: No se encontró el mes "${targetMonthString}" en 'expenseDetailsByMonth'.`);
-        // Como fallback, podrías agregarlo al último mes, pero es mejor que falle y lo notes.
+        console.error(`Error: No se encontró el mes con ID "${monthId}".`);
     }
 
     // 6. Revalidar la ruta para que Next.js actualice la UI
@@ -142,30 +206,42 @@ export async function addExpense(expense: ExpenseDetail): Promise<void> {
 }
 
 
-export async function addMonth(monthName: string, totalIncome: number): Promise<void> {
+export async function addMonth(monthIndex: number, year: number, totalIncome: number): Promise<void> {
     // Simular delay de API
     await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // 1. Obtener el total del último mes para usarlo como "mes anterior"
+    // 1. Generar ID único y Nombre
+    const monthId = `month-${monthIndex + 1}-${year}`; // Ej: month-12-2025
+
+    const date = new Date(year, monthIndex);
+    const monthName = date.toLocaleString('es-ES', {month: 'long', timeZone: 'UTC'});
+    const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    const monthString = `${capitalizedMonth} ${year}`;
+
+    // 2. Verificar si ya existe
+    if (expenseDetailsByMonth.some(m => m.id === monthId)) {
+        console.warn(`El mes con id ${monthId} ya existe.`);
+        return; // O manejar el error
+    }
+
+    // 3. Obtener datos del mes anterior
     const lastMonth = expenseDetailsByMonth[expenseDetailsByMonth.length - 1];
     const previousMonthTotal = lastMonth ? lastMonth.totalCurrentMonth : 0;
-
-    // 2. Calcular la variación (si el mes anterior tuvo gastos, la variación es -100%)
     const variation = previousMonthTotal > 0 ? -100 : 0;
 
-    // 3. Crear el nuevo registro de mes (vacío)
+    // 4. Crear nuevo mes con ID
     const newMonth: ExpenseDataDetail = {
-        month: monthName,
-        totalIncome: totalIncome, // Inicia en 0
-        totalCurrentMonth: 0, // Inicia en 0
+        id: monthId, // <-- ID asignado
+        month: monthString,
+        totalIncome: totalIncome,
+        totalCurrentMonth: 0,
         totalPreviousMonth: previousMonthTotal,
         totalVariation: variation,
-        expenses: [], // Array de gastos vacío
+        expenses: [],
     };
 
-    // 4. Agregar el nuevo mes a la data (simulación de DB)
     expenseDetailsByMonth.push(newMonth);
-
     // 5. Revalidar la ruta
     revalidatePath('/detalle');
 }
