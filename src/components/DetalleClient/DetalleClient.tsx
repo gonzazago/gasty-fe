@@ -1,44 +1,22 @@
 // src/components/DetalleClient/DetalleClient.tsx
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import {
-    type Column,
-    FixedCell,
-    Table, // ¡Usando la tabla genérica!
-    InstallmentCell,
-    VariationCell
-} from '@/components';
-import {
-    ChevronDown,
-    ChevronLeft, // Importado para navegación
-    ChevronRight // Importado para navegación
-} from 'lucide-react';
-import {
-    Card, // Importado para el hook
-    ExpenseDataDetail,
-    ExpenseDetail
-} from '@/types/dashboard';
-import {
-    type ProcessedRow,
-    useExpenseGrouping
-} from '@/hooks/useExpenseGrouping'; // Hook de agrupación
+import {Fragment, useEffect, useMemo, useState} from 'react';
+import {type Column, FixedCell, InstallmentCell, Table, VariationCell} from '@/components';
+import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
+import {Card, ExpenseDataDetail, ExpenseDetail} from '@/types/dashboard';
+import {type ProcessedRow, useExpenseGrouping} from '@/hooks/useExpenseGrouping'; // Hook de agrupación
 
-// --- Props ---
 interface DetalleClientProps {
     initialData: ExpenseDataDetail[];
     initialCards: Card[]; // Necesario para agrupar por tarjeta
 }
-
-// --- Columnas ---
-
-// 1. Columnas para el HEADER de la tabla.
 const headerColumns: Column<ProcessedRow>[] = [
-    { key: 'category', header: 'Tipo de Gasto', accessor: 'type', className: 'font-medium' },
-    { key: 'place', header: 'Lugar/Descripción', accessor: 'type', className: 'text-gray-600' },
-    { key: 'fixed', header: 'Fijo', accessor: 'type' },
-    { key: 'split', header: 'Cuotas', accessor: 'type' },
-    { key: 'amount', header: 'Monto', accessor: 'type', className: 'text-right' }
+    {key: 'category', header: 'Tipo de Gasto', accessor: 'type', className: 'font-medium'},
+    {key: 'place', header: 'Lugar/Descripción', accessor: 'type', className: 'text-gray-600'},
+    {key: 'fixed', header: 'Fijo', accessor: 'type'},
+    {key: 'split', header: 'Cuotas', accessor: 'type'},
+    {key: 'amount', header: 'Monto', accessor: 'type', className: 'text-right'}
 ];
 
 // 2. Columnas para las FILAS de gastos (hijos y sueltos).
@@ -59,13 +37,13 @@ const expenseColumns: Column<ExpenseDetail>[] = [
         key: 'fixed',
         header: 'Fijo',
         accessor: 'fixed',
-        render: (value) => <FixedCell fixed={value as boolean} />
+        render: (value) => <FixedCell fixed={value as boolean}/>
     },
     {
         key: 'split',
         header: 'Cuotas',
         accessor: 'split',
-        render: (value) => <InstallmentCell split={value as ExpenseDetail['split']} />
+        render: (value) => <InstallmentCell split={value as ExpenseDetail['split']}/>
     },
     {
         key: 'amount',
@@ -73,14 +51,14 @@ const expenseColumns: Column<ExpenseDetail>[] = [
         accessor: 'amount',
         render: (value) => (
             <span className="font-semibold text-gray-900">
-              ${(value as number).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              ${(value as number).toLocaleString('es-AR', {minimumFractionDigits: 2})}
             </span>
         ),
         className: 'text-right'
     }
 ];
 
-export default function DetalleClient({ initialData, initialCards }: DetalleClientProps) {
+export default function DetalleClient({initialData, initialCards}: DetalleClientProps) {
 
     // ... (Estados, useEffect, Navegación de Mes, Lógica de Expansión se mantienen) ...
     const [currentMonthIndex, setCurrentMonthIndex] = useState(initialData.length > 0 ? initialData.length - 1 : 0);
@@ -119,26 +97,26 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
     };
 
 // ✅ 2. CORRECCIÓN EN useMemo (para los widgets)
-    const { totalIncome, fixedExpenses, variableExpenses, cuotasExpenses } = useMemo(() => {
+    const {totalIncome, fixedExpenses, variableExpenses, cuotasExpenses} = useMemo(() => {
         if (!expenseDetailsData) {
-            return { totalIncome: 0, fixedExpenses: 0, variableExpenses: 0, cuotasExpenses: 0 };
+            return {totalIncome: 0, fixedExpenses: 0, variableExpenses: 0, cuotasExpenses: 0};
         }
 
         const totalIncome = expenseDetailsData.totalIncome || 0;
 
         const fixedExpenses = expenseDetailsData.expenses
-            .filter(e => (e.fixed || e.fixed === true)) // Maneja booleano o string
+            .filter(e => e.fixed)// Maneja booleano o string
             .reduce((sum, expense) => sum + (expense.amount || 0), 0);
 
         const variableExpenses = expenseDetailsData.expenses
-            .filter(e => (!e.fixed || e.fixed === 'false') && e.split === null) // Maneja booleano o string
+            .filter(e => !e.fixed)
             .reduce((sum, expense) => sum + (expense.amount || 0), 0);
 
         const cuotasExpenses = expenseDetailsData.expenses
             .filter(e => e.split !== null)
             .reduce((sum, expense) => sum + (expense.amount || 0), 0);
 
-        return { totalIncome, fixedExpenses, variableExpenses, cuotasExpenses };
+        return {totalIncome, fixedExpenses, variableExpenses, cuotasExpenses};
     }, [expenseDetailsData]);
 
     if (!expenseDetailsData) {
@@ -146,7 +124,7 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
     }
 
     // ... (la función renderCustomRow se mantiene igual) ...
-    const renderCustomRow = (row: ProcessedRow, _cols: Column<ProcessedRow>[]) => {
+    const renderCustomRow = (row: ProcessedRow) => {
         if (row.type === 'CARD_SUMMARY') {
             const isExpanded = expandedCardIds.has(row.cardId);
             return (
@@ -154,8 +132,9 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
                     <tr onClick={() => toggleExpand(row.cardId)} className="hover:bg-gray-50 cursor-pointer group">
                         <td className="px-4 py-4 font-medium" colSpan={2}>
                             <div className="flex items-center">
-                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform mr-2 ${isExpanded ? 'rotate-180' : ''}`} />
-                                <span className="font-bold" style={{ color: row.cardColor }}>
+                                <ChevronDown
+                                    className={`w-5 h-5 text-gray-400 transition-transform mr-2 ${isExpanded ? 'rotate-180' : ''}`}/>
+                                <span className="font-bold" style={{color: row.cardColor}}>
                                     {row.cardName}
                                 </span>
                                 <span className="ml-2 text-sm text-gray-500">({row.childExpenses.length} gastos)</span>
@@ -164,17 +143,19 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
                         <td></td>
                         <td></td>
                         <td className="px-4 py-4 text-right font-semibold text-gray-900">
-                            ${row.totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                            ${row.totalAmount.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                         </td>
                     </tr>
                     {isExpanded && row.childExpenses.map(expense => (
-                        <ExpenseRow key={`${expense.place}-${expense.amount}-${Math.random()}`} expense={expense} columns={expenseColumns} isChild={true} />
+                        <ExpenseRow key={`${expense.place}-${expense.amount}-${Math.random()}`} expense={expense}
+                                    columns={expenseColumns} isChild={true}/>
                     ))}
                 </Fragment>
             );
         }
         if (row.type === 'STANDALONE_EXPENSE') {
-            return <ExpenseRow key={`${row.expense.place}-${row.expense.amount}-${Math.random()}`} expense={row.expense} columns={expenseColumns} />;
+            return <ExpenseRow key={`${row.expense.place}-${row.expense.amount}-${Math.random()}`} expense={row.expense}
+                               columns={expenseColumns}/>;
         }
         return null;
     };
@@ -192,7 +173,7 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
                                 disabled={currentMonthIndex === 0}
                                 className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
                             >
-                                <ChevronLeft className="w-5 h-5" />
+                                <ChevronLeft className="w-5 h-5"/>
                             </button>
                             <div className="text-center">
                                 <div className="text-xl font-semibold text-gray-900">
@@ -207,15 +188,15 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
                                 disabled={currentMonthIndex === expensesData.length - 1}
                                 className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
                             >
-                                <ChevronRight className="w-5 h-5" />
+                                <ChevronRight className="w-5 h-5"/>
                             </button>
                         </div>
                         <div className="text-right">
                             <div className="text-2xl font-bold text-gray-900">
-                                ${expenseDetailsData.totalCurrentMonth.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                ${expenseDetailsData.totalCurrentMonth.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                             </div>
                             <div className="flex items-center justify-end space-x-1">
-                                <VariationCell value={expenseDetailsData.totalVariation} />
+                                <VariationCell value={expenseDetailsData.totalVariation}/>
                                 <span className="text-sm text-gray-500">vs mes anterior</span>
                             </div>
                         </div>
@@ -228,25 +209,25 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Ingresos</h3>
                     <div className="text-3xl font-bold text-green-600">
-                        ${totalIncome.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${totalIncome.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
                 </div>
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Gastos Fijos</h3>
                     <div className="text-3xl font-bold text-blue-600">
-                        ${fixedExpenses.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${fixedExpenses.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
                 </div>
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Gastos Variables</h3>
                     <div className="text-3xl font-bold text-orange-600">
-                        ${variableExpenses.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${variableExpenses.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
                 </div>
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Gastos en Cuotas</h3>
                     <div className="text-3xl font-bold text-purple-600">
-                        ${cuotasExpenses.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${cuotasExpenses.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
                 </div>
             </div>
@@ -258,20 +239,19 @@ export default function DetalleClient({ initialData, initialCards }: DetalleClie
                 keyExtractor={(row: ProcessedRow) =>
                     row.type === 'CARD_SUMMARY' ? row.cardId : `${row.expense.place}-${row.expense.amount}-${Math.random()}`
                 }
-                renderRow={(row, cols) => renderCustomRow(row as ProcessedRow, cols)}
+                renderRow={(row, cols) => renderCustomRow(row as ProcessedRow)}
             />
         </>
     );
 }
 
-// ... (El componente ExpenseRow se mantiene igual) ...
 type ExpenseRowProps = {
     expense: ExpenseDetail;
     columns: Column<ExpenseDetail>[];
     isChild?: boolean;
 };
 
-function ExpenseRow({ expense, columns, isChild = false }: ExpenseRowProps) {
+function ExpenseRow({expense, columns, isChild = false}: ExpenseRowProps) {
     return (
         <tr className={isChild ? 'bg-purple-50/30 hover:bg-purple-50' : 'hover:bg-gray-50'}>
             {columns.map(col => {

@@ -96,7 +96,6 @@ export default function NavigationWrapper({
             {showAddExpense && (
                 <AddExpenseForm
                     onClose={() => setShowAddExpense(false)}
-                    onAddExpense={handleAddExpense}
                     cards={initialCards}
                     months={monthListForDropdown} // 4. Pasa la lista correcta
                 />

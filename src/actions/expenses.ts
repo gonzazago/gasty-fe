@@ -1,6 +1,6 @@
 'use server';
 import {revalidatePath} from 'next/cache'; // <-- Importar revalidatePath
-import {expenseDetailsByMonth, expenseDetailsData} from '@/data/expenseDetailsData';
+import {expenseDetailsByMonth} from '@/data/expenseDetailsData';
 import {balanceData} from '@/data/mockData';
 import {BalanceData, ExpenseData, ExpenseDataDetail, ExpenseDetail, MetricData, MonthlyData} from '@/types/dashboard';
 

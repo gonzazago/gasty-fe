@@ -1,10 +1,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Plus, Building2, CreditCard, Trash2, Edit} from 'lucide-react';
+import {Building2, CreditCard, Edit, Plus, Trash2} from 'lucide-react';
 import {Bank, Card} from '@/types/dashboard';
 import {AddBankForm, AddCardForm} from '@/components/forms';
-import {createBank} from "@/actions/banksAndCards";
 
 interface BanksAndCardsManagerProps {
     initialBanks: Bank[];
@@ -36,13 +35,11 @@ export default function BanksAndCardsManager({initialBanks, initialCards,}: Bank
     };
 
 
-    // 💡 Nuevos handlers que llaman a Server Actions (o simulan la lógica)
     const onAddBank = async (bank: Omit<Bank, 'id' | 'createdAt'>) => {
-        // 💡 Aquí invocarías tu Server Action:
-        //const newBank = await createBank(bank);
 
         // Simulación de una Server Action + actualización de UI
-        const newBank = {...bank, id: crypto.randomUUID(), createdAt: new Date()};
+        // ✅ CORREGIDO: Convertido a string
+        const newBank = {...bank, id: crypto.randomUUID(), createdAt: new Date().toISOString()};
         setBanks(prev => [...prev, newBank]);
         setShowAddBank(false);
     };
@@ -52,7 +49,8 @@ export default function BanksAndCardsManager({initialBanks, initialCards,}: Bank
         // const newCard = await addCard(card);
 
         // Simulación de una Server Action + actualización de UI
-        const newCard = {...card, id: crypto.randomUUID(), createdAt: new Date()};
+        // ✅ CORREGIDO: Convertido a string
+        const newCard = {...card, id: crypto.randomUUID(), createdAt: new Date().toISOString()};
         setCards(prev => [...prev, newCard]);
         setShowAddCard(false);
     };

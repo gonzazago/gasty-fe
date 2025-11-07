@@ -24,6 +24,7 @@ export interface ExpenseData {
     value: number;
     color: string;
     percentage: number;
+    [key: string]: unknown; // <-- Añade esta línea
 }
 
 export interface MonthlyData {

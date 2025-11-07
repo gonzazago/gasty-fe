@@ -1,14 +1,8 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import {ExpenseData} from "@/types/dashboard";
 
-interface ExpenseData {
-  name: string;
-  value: number;
-  color: string;
-  percentage: number;
-  [key: string]: string | number;
-}
 
 interface ExpenseChartProps {
   data: ExpenseData[];

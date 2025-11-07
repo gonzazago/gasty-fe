@@ -1,4 +1,4 @@
-import { Sidebar, Header, BanksAndCardsManager } from '@/components';
+import { BanksAndCardsManager } from '@/components';
 import { getAllBanks, getAllCards } from '@/actions/banksAndCards';
 
 export default async function BancosPage() {

@@ -1,7 +1,8 @@
-// src/components/forms/FormSelect.tsx
-import {FieldErrors, Path, UseFormRegister} from 'react-hook-form';
+// src/components/forms/components/FormSelect/FormSelect.tsx
+import { FieldErrors, Path, UseFormRegister, FieldValues } from 'react-hook-form'; // 1. Importa FieldValues
 
-type FormSelectProps<TFormValues extends Record<string, any>> = {
+// 2. Usa FieldValues en lugar de Record<string, any>
+type FormSelectProps<TFormValues extends FieldValues> = {
     label: string;
     name: Path<TFormValues>;
     register: UseFormRegister<TFormValues>;
@@ -10,16 +11,17 @@ type FormSelectProps<TFormValues extends Record<string, any>> = {
     children: React.ReactNode; // Para los <option>
 } & Omit<React.ComponentProps<'select'>, 'name'>;
 
-export default function FormSelect<TFormValues extends Record<string, any>>({
-                                                                                label,
-                                                                                name,
-                                                                                register,
-                                                                                errors,
-                                                                                registerOptions,
-                                                                                children,
-                                                                                className,
-                                                                                ...props
-                                                                            }: FormSelectProps<TFormValues>) {
+// 3. Usa FieldValues aquí también
+export default function FormSelect<TFormValues extends FieldValues>({
+                                                                        label,
+                                                                        name,
+                                                                        register,
+                                                                        errors,
+                                                                        registerOptions,
+                                                                        children,
+                                                                        className,
+                                                                        ...props
+                                                                    }: FormSelectProps<TFormValues>) {
 
     const hasError = !!errors[name];
 

@@ -1,8 +1,8 @@
-// src/components/forms/FormInput.tsx
-import { UseFormRegister, FieldErrors, Path } from 'react-hook-form';
+// src/components/forms/components/FormInput/FormInput.tsx
+import { UseFormRegister, FieldErrors, Path, FieldValues } from 'react-hook-form'; // 1. Importa FieldValues
 
-// Definimos un tipo genérico para que funcione con cualquier formulario
-type FormInputProps<TFormValues extends Record<string, any>> = {
+// 2. Usa FieldValues en lugar de Record<string, any>
+type FormInputProps<TFormValues extends FieldValues> = {
     label: string;
     name: Path<TFormValues>;
     register: UseFormRegister<TFormValues>;
@@ -11,16 +11,17 @@ type FormInputProps<TFormValues extends Record<string, any>> = {
     prefix?: string; // Para el "$" en el campo de monto
 } & Omit<React.ComponentProps<'input'>, 'name'>; // Hereda props de <input>
 
-export default function FormInput<TFormValues extends Record<string, any>>({
-                                                                               label,
-                                                                               name,
-                                                                               register,
-                                                                               errors,
-                                                                               registerOptions,
-                                                                               prefix,
-                                                                               className,
-                                                                               ...props // (ej: type, placeholder, step, min)
-                                                                           }: FormInputProps<TFormValues>) {
+// 3. Usa FieldValues aquí también
+export default function FormInput<TFormValues extends FieldValues>({
+                                                                       label,
+                                                                       name,
+                                                                       register,
+                                                                       errors,
+                                                                       registerOptions,
+                                                                       prefix,
+                                                                       className,
+                                                                       ...props // (ej: type, placeholder, step, min)
+                                                                   }: FormInputProps<TFormValues>) {
 
     const hasError = !!errors[name];
 

@@ -13,16 +13,13 @@ interface AddBankFormProps {
     onAddBank: (bank: Omit<Bank, 'id' | 'createdAt'>) => void;
 }
 
-interface FormData {
-    name: string;
-    color: string;
-    logo?: string;
-}
+
+type FormData = yup.InferType<typeof schema>;
 
 const schema = yup.object({
     name: yup.string().required('El nombre del banco es obligatorio'),
     color: yup.string().required('El color es obligatorio'),
-    logo: yup.string().optional()
+    logo: yup.string().defined()
 });
 
 const bankColors = [

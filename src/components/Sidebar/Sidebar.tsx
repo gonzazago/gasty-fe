@@ -2,8 +2,7 @@ import {
     LayoutDashboard,
     Table,
     Building2,
-    PieChart,
-    // ... (otros iconos)
+
 } from 'lucide-react';
 import Link from 'next/link';
 
