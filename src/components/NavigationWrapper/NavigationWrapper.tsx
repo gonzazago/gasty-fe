@@ -4,8 +4,8 @@
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AddExpenseForm, Header, Sidebar } from '@/components';
-import { Card, ExpenseDataDetail, ExpenseDetail } from '@/types/dashboard';
-import { addExpense, addMonth } from "@/actions/expenses";
+import { Card, ExpenseDataDetail } from '@/types/dashboard';
+import { addMonth } from "@/actions/expenses";
 import AddMonthForm from "@/components/forms/AddMonthForm";
 
 interface NavigationWrapperProps {
