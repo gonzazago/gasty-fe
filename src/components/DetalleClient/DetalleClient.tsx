@@ -3,7 +3,7 @@
 
 import {Fragment, useEffect, useMemo, useState} from 'react';
 import {type Column, FixedCell, InstallmentCell, Table, VariationCell} from '@/components';
-import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
+import {ChevronDown, ChevronLeft, ChevronRight, TrendingUp, DollarSign, CreditCard, ShoppingCart, Calendar} from 'lucide-react';
 import {Card, ExpenseDataDetail, ExpenseDetail} from '@/types/dashboard';
 import {type ProcessedRow, useExpenseGrouping} from '@/hooks/useExpenseGrouping'; // Hook de agrupación
 
@@ -162,73 +162,134 @@ export default function DetalleClient({initialData, initialCards}: DetalleClient
 
 
     return (
-        <>
-            {/* ✅ --- NAVEGACIÓN DE MES (RESTAURADA) --- */}
+        <div className="flex flex-col min-w-0 w-full">
+            {/* ✅ --- NAVEGACIÓN DE MES MEJORADA --- */}
             <div className="mb-6">
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+                        <div className="flex items-center space-x-3 sm:space-x-4 w-full sm:w-auto">
                             <button
                                 onClick={goToPreviousMonth}
                                 disabled={currentMonthIndex === 0}
-                                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+                                aria-label="Mes anterior"
                             >
                                 <ChevronLeft className="w-5 h-5"/>
                             </button>
-                            <div className="text-center">
-                                <div className="text-xl font-semibold text-gray-900">
+                            <div className="text-center flex-1 sm:flex-initial">
+                                <div className="text-lg sm:text-xl font-bold text-gray-900">
                                     {expenseDetailsData.month}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-xs sm:text-sm text-gray-500 mt-0.5">
                                     {currentMonthIndex + 1} de {expensesData.length} meses
                                 </div>
                             </div>
                             <button
                                 onClick={goToNextMonth}
                                 disabled={currentMonthIndex === expensesData.length - 1}
-                                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+                                aria-label="Mes siguiente"
                             >
                                 <ChevronRight className="w-5 h-5"/>
                             </button>
                         </div>
-                        <div className="text-right">
-                            <div className="text-2xl font-bold text-gray-900">
+                        <div className="text-left sm:text-right w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0">
+                            <div className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
                                 ${expenseDetailsData.totalCurrentMonth.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                             </div>
-                            <div className="flex items-center justify-end space-x-1">
+                            <div className="flex items-center sm:justify-end space-x-1">
                                 <VariationCell value={expenseDetailsData.totalVariation}/>
-                                <span className="text-sm text-gray-500">vs mes anterior</span>
+                                <span className="text-xs sm:text-sm text-gray-500">vs mes anterior</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ✅ --- WIDGETS DE RESUMEN (RESTAURADOS) --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Ingresos</h3>
-                    <div className="text-3xl font-bold text-green-600">
+            {/* ✅ --- WIDGETS DE RESUMEN MEJORADOS --- */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                {/* Widget Total Ingresos */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 sm:p-6 shadow-sm border border-green-100 hover:shadow-md transition-all duration-200 group">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="p-2.5 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                            Ingresos
+                        </span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-medium text-gray-700 mb-2">Total Ingresos</h3>
+                    <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-1">
                         ${totalIncome.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
+                    {totalIncome > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                            {Math.max(0, ((totalIncome - expenseDetailsData.totalCurrentMonth) / totalIncome * 100)).toFixed(1)}% disponible
+                        </p>
+                    )}
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Gastos Fijos</h3>
-                    <div className="text-3xl font-bold text-blue-600">
+
+                {/* Widget Gastos Fijos */}
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 sm:p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all duration-200 group">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="p-2.5 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+                            Fijos
+                        </span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-medium text-gray-700 mb-2">Gastos Fijos</h3>
+                    <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-1">
                         ${fixedExpenses.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
+                    {totalIncome > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                            {((fixedExpenses / totalIncome) * 100).toFixed(1)}% del total
+                        </p>
+                    )}
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Gastos Variables</h3>
-                    <div className="text-3xl font-bold text-orange-600">
+
+                {/* Widget Gastos Variables */}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 sm:p-6 shadow-sm border border-orange-100 hover:shadow-md transition-all duration-200 group">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="p-2.5 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-medium text-orange-700 bg-orange-100 px-2 py-1 rounded-full">
+                            Variables
+                        </span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-medium text-gray-700 mb-2">Gastos Variables</h3>
+                    <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-1">
                         ${variableExpenses.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
+                    {totalIncome > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                            {((variableExpenses / totalIncome) * 100).toFixed(1)}% del total
+                        </p>
+                    )}
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Gastos en Cuotas</h3>
-                    <div className="text-3xl font-bold text-purple-600">
+
+                {/* Widget Gastos en Cuotas */}
+                <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-5 sm:p-6 shadow-sm border border-purple-100 hover:shadow-md transition-all duration-200 group">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="p-2.5 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                            <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-medium text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
+                            Cuotas
+                        </span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-medium text-gray-700 mb-2">Gastos en Cuotas</h3>
+                    <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-1">
                         ${cuotasExpenses.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </div>
+                    {totalIncome > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                            {((cuotasExpenses / totalIncome) * 100).toFixed(1)}% del total
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -241,7 +302,7 @@ export default function DetalleClient({initialData, initialCards}: DetalleClient
                 }
                 renderRow={(row) => renderCustomRow(row as ProcessedRow)}
             />
-        </>
+        </div>
     );
 }
 

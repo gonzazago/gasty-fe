@@ -29,7 +29,7 @@ export default function FormSelect<TFormValues extends FieldValues>({
         <div>
             <label
                 htmlFor={name}
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
             >
                 {label}
             </label>
@@ -38,17 +38,17 @@ export default function FormSelect<TFormValues extends FieldValues>({
                 {...register(name, registerOptions)}
                 {...props}
                 className={`
-          w-full px-3 py-2 border rounded-lg 
-          text-gray-900 
+          w-full px-3 py-2.5 sm:py-2 border rounded-lg 
+          text-sm sm:text-base text-gray-900 
           focus:outline-none focus:ring-2 focus:ring-purple-500
           ${hasError ? 'border-red-500' : 'border-gray-300'}
-          ${className}
+          ${className || ''}
         `}
             >
                 {children}
             </select>
             {hasError && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="text-red-500 text-xs sm:text-sm mt-1">
                     {errors[name]?.message as string}
                 </p>
             )}

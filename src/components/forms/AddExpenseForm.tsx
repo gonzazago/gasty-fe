@@ -150,18 +150,18 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-4">
+            <div className="bg-white rounded-none sm:rounded-xl shadow-xl w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto">
+                <div className="p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-900">Agregar Gasto</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Agregar Gasto</h2>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                             <X className="w-5 h-5"/>
                         </button>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
 
                     <FormSelect
                         label="Asignar al Mes *"
@@ -177,8 +177,8 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
                         ))}
                     </FormSelect>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        <div className="space-y-4 sm:space-y-6">
                             <FormSelect
                                 label="Categoría *"
                                 name="category"
@@ -247,14 +247,14 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
 
                     {cards.length > 0 && selectedCategory !== 'Tarjetas' && (
                         <div
-                            className={`p-4 rounded-lg border ${selectedCardId ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
+                            className={`p-3 sm:p-4 rounded-lg border ${selectedCardId ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
                             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                                <CreditCard className="w-4 h-4 mr-2 text-gray-500"/>
-                                Pagar con Tarjeta (Opcional)
+                                <CreditCard className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0"/>
+                                <span className="text-xs sm:text-sm">Pagar con Tarjeta (Opcional)</span>
                             </label>
                             <select
                                 {...register('cardId')}
-                                className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                             >
                                 <option value="">Ninguna (Efectivo/Débito)</option>
                                 {cards.map((card) => (
@@ -267,47 +267,47 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Tipo de Gasto</label>
-                        <div className="flex space-x-4">
-                            <label className="flex items-center cursor-pointer">
+                        <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">Tipo de Gasto</label>
+                        <div className="flex flex-wrap gap-3 sm:gap-4">
+                            <label className="flex items-center cursor-pointer flex-1 sm:flex-initial min-w-[100px]">
                                 <input
                                     type="radio"
                                     {...register('fixed', {
                                         setValueAs: (v) => v === 'true'
                                     })}
                                     value="false"
-                                    className="mr-2"
+                                    className="mr-2 w-4 h-4"
                                 />
                                 <span className="text-sm text-gray-700">Variable</span>
                             </label>
-                            <label className="flex items-center cursor-pointer">
+                            <label className="flex items-center cursor-pointer flex-1 sm:flex-initial min-w-[100px]">
                                 <input
                                     type="radio"
                                     {...register('fixed', {
                                         setValueAs: (v) => v === 'true'
                                     })}
                                     value="true"
-                                    className="mr-2"
+                                    className="mr-2 w-4 h-4"
                                 />
                                 <span className="text-sm text-gray-700">Fijo</span>
                             </label>
                         </div>
-                        {errors.fixed && <p className="text-red-500 text-sm mt-1">{errors.fixed.message}</p>}
+                        {errors.fixed && <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.fixed.message}</p>}
                     </div>
 
                     <div>
-                        <label className="flex items-center mb-3 cursor-pointer">
+                        <label className="flex items-center mb-2 sm:mb-3 cursor-pointer">
                             <input
                                 type="checkbox"
                                 {...register('hasInstallments')}
-                                className="mr-2"
+                                className="mr-2 w-4 h-4"
                             />
                             <span className="text-sm font-medium text-gray-700">Es un gasto en cuotas</span>
                         </label>
 
                         {hasInstallments && (
                             <div
-                                className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
+                                className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
 
                                 <FormInput
                                     label="Cuota Actual *"
@@ -332,13 +332,13 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
                         )}
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 sticky bottom-0 bg-white pb-4 sm:pb-0 -mx-4 sm:mx-0 px-4 sm:px-0">
                         <button type="button" onClick={onClose}
-                                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                className="w-full sm:w-auto px-6 py-2.5 sm:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base font-medium">
                             Cancelar
                         </button>
                         <button type="submit"
-                                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2">
+                                className="w-full sm:w-auto px-6 py-2.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 flex items-center justify-center space-x-2 transition-colors text-sm sm:text-base font-medium">
                             <Plus className="w-4 h-4"/>
                             <span>Agregar Gasto</span>
                         </button>

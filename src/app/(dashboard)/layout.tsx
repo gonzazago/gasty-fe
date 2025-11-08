@@ -13,7 +13,7 @@ export default async function DashboardLayout({
     const [cards, monthData] = await Promise.all([getAllCards(),getExpenseDetailsByMonth()]);
     console.log(cards)
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="h-screen bg-gray-50">
             {/* NavigationWrapper se encarga del Sidebar, Header y la lógica de estado/hooks */}
             <NavigationWrapper initialCards={cards} initialMonths={monthData} >
                 {children}

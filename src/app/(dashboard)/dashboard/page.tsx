@@ -24,24 +24,22 @@ export default async function Dashboard() {
     const totalExpenseString = metricsData.find(m => m.title === 'Total Gastos')?.value || '$0.00';
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden">
-            <main className="flex-1 overflow-y-auto p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="flex flex-col min-w-0 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     {metricsData.map((metric, index) => (
                         <MetricCard key={index} {...metric} />
                     ))}
-                </div>
+            </div>
 
-                {/* Gráficos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <BalanceChart data={balanceData} />
-                    <ExpenseChart data={expenseData} totalExpense={totalExpenseString} />
-                </div>
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <BalanceChart data={balanceData} />
+                <ExpenseChart data={expenseData} totalExpense={totalExpenseString} />
+            </div>
 
-                <div className="grid grid-cols-1 gap-6">
-                    <MonthlyExpenseChart data={monthlyData} />
-                </div>
-            </main>
+            <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                <MonthlyExpenseChart data={monthlyData} />
+            </div>
         </div>
     );
 }
