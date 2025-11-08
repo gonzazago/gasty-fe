@@ -9,6 +9,9 @@ import {CreditCard, Plus, X} from 'lucide-react';
 import {Card, ExpenseDataDetail, ExpenseDetail} from '@/types/dashboard';
 import {FormInput, FormSelect} from '@/components/forms/components';
 import { addExpense } from '@/actions/expenses';
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import Modal from "@/components/ui/Modal";
+import Spinner from "@/components/ui/Spinner";
 
 
 interface AddExpenseFormProps {
@@ -98,6 +101,11 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
 
     const watchedMonthId = watch('monthId');
     const [dateConfig, setDateConfig] = useState({min: '', max: ''});
+    const [loading, setLoading] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'success'|'error'>('success');
+    const [modalMessage, setModalMessage] = useState('');
+
 
     useEffect(() => {
         if (watchedMonthId) {
@@ -123,30 +131,41 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
     }, [watchedMonthId, setValue]);
 
     const onSubmit = async (data: FormData) => {
-        const {monthId, ...expenseData} = data;
+        setLoading(true);
+        try {
+            const {monthId, ...expenseData} = data;
 
-        let finalAmount = expenseData.amount;
-        if (expenseData.hasInstallments && expenseData.totalInstallments && expenseData.totalInstallments > 0) {
-            finalAmount = expenseData.amount / expenseData.totalInstallments;
+            let finalAmount = expenseData.amount;
+            if (expenseData.hasInstallments && expenseData.totalInstallments && expenseData.totalInstallments > 0) {
+                finalAmount = expenseData.amount / expenseData.totalInstallments;
+            }
+
+            const expense: ExpenseDetail = {
+                category: expenseData.category,
+                place: expenseData.place,
+                amount: finalAmount,
+                date: expenseData.date,
+                fixed: expenseData.fixed,
+                split: expenseData.hasInstallments && expenseData.currentInstallment && expenseData.totalInstallments ? {
+                    current: expenseData.currentInstallment ?? 1,
+                    total: expenseData.totalInstallments?? 1,
+                    lefts: expenseData.totalInstallments - expenseData.currentInstallment
+                } : null,
+                cardId: expenseData.cardId || ''
+            };
+
+            await addExpense(monthId, expense);
+            reset();
+            setModalType('success');
+            setModalMessage('¡Gasto agregado correctamente!');
+            setModalOpen(true);
+            // onClose lo hará el usuario al cerrar modal
+        } catch (e) {
+            setModalType('error');
+            setModalMessage('Hubo un error al agregar el gasto');
+            setModalOpen(true);
         }
-
-        const expense: ExpenseDetail = {
-            category: expenseData.category,
-            place: expenseData.place,
-            amount: finalAmount,
-            date: expenseData.date,
-            fixed: expenseData.fixed,
-            split: expenseData.hasInstallments && expenseData.currentInstallment && expenseData.totalInstallments ? {
-                current: expenseData.currentInstallment ?? 1,
-                total: expenseData.totalInstallments?? 1,
-                lefts: expenseData.totalInstallments - expenseData.currentInstallment
-            } : null,
-            cardId: expenseData.cardId || ''
-        };
-
-        await addExpense(monthId, expense);
-        reset();
-        onClose();
+        setLoading(false);
     };
 
     return (
@@ -334,17 +353,20 @@ export default function AddExpenseForm({onClose, cards = [], months = []}: AddEx
 
                     <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 sticky bottom-0 bg-white pb-4 sm:pb-0 -mx-4 sm:mx-0 px-4 sm:px-0">
                         <button type="button" onClick={onClose}
-                                className="w-full sm:w-auto px-6 py-2.5 sm:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base font-medium">
+                                className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base font-medium">
                             Cancelar
                         </button>
-                        <button type="submit"
-                                className="w-full sm:w-auto px-6 py-2.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 flex items-center justify-center space-x-2 transition-colors text-sm sm:text-base font-medium">
-                            <Plus className="w-4 h-4"/>
-                            <span>Agregar Gasto</span>
-                        </button>
+                        <PrimaryButton type="submit" iconLeft={<Plus />} className="w-full sm:w-auto" disabled={loading}>
+                            {loading ? <Spinner /> : 'Agregar Gasto'}
+                        </PrimaryButton>
                     </div>
                 </form>
             </div>
+            <Modal open={modalOpen} onClose={() => { setModalOpen(false); onClose(); }} type={modalType}>
+                <div className="text-center font-medium text-base p-2">
+                    {modalMessage}
+                </div>
+            </Modal>
         </div>
     );
 }

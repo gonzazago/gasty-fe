@@ -20,7 +20,7 @@ describe('AddExpenseForm', () => {
   const mockProps = {
     onClose: vi.fn(),
     cards: [
-      { id: '1', name: 'Visa', lastFourDigits: '1234', bankId: '1', type: 'visa', color: '#000', createdAt: '' }
+      { id: '1', name: 'Visa', lastFourDigits: '1234', bankId: '1', type: 'visa' as const, color: '#000', createdAt: '' }
     ],
     months: [
       { id: 'month-1', month: 'Enero 2024' }

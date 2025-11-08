@@ -3,9 +3,10 @@
 
 import {Fragment, useEffect, useMemo, useState} from 'react';
 import {type Column, FixedCell, InstallmentCell, Table, VariationCell} from '@/components';
-import {ChevronDown, ChevronLeft, ChevronRight, TrendingUp, DollarSign, CreditCard, ShoppingCart, Calendar} from 'lucide-react';
+import {ChevronDown, ChevronLeft, ChevronRight, TrendingUp, DollarSign, CreditCard, ShoppingCart, Calendar, Receipt, Plus, Table as TableIcon} from 'lucide-react';
 import {Card, ExpenseDataDetail, ExpenseDetail} from '@/types/dashboard';
 import {type ProcessedRow, useExpenseGrouping} from '@/hooks/useExpenseGrouping'; // Hook de agrupación
+import { useMonth } from '../NavigationWrapper/MonthContext';
 
 interface DetalleClientProps {
     initialData: ExpenseDataDetail[];
@@ -59,17 +60,12 @@ const expenseColumns: Column<ExpenseDetail>[] = [
 ];
 
 export default function DetalleClient({initialData, initialCards}: DetalleClientProps) {
-
-    // ... (Estados, useEffect, Navegación de Mes, Lógica de Expansión se mantienen) ...
-    const [currentMonthIndex, setCurrentMonthIndex] = useState(initialData.length > 0 ? initialData.length - 1 : 0);
+    const { currentMonthIndex, setCurrentMonthIndex } = useMonth();
     const [expensesData, setExpensesData] = useState<ExpenseDataDetail[]>(initialData);
     const expenseDetailsData = expensesData[currentMonthIndex] || expensesData[0];
 
     useEffect(() => {
         setExpensesData(initialData);
-        if (initialData.length > 0) {
-            setCurrentMonthIndex(initialData.length - 1);
-        }
     }, [initialData]);
 
     const goToPreviousMonth = () => {
@@ -120,7 +116,17 @@ export default function DetalleClient({initialData, initialCards}: DetalleClient
     }, [expenseDetailsData]);
 
     if (!expenseDetailsData) {
-        return <div className="p-6 text-center text-gray-500">Cargando datos del mes...</div>;
+        return (
+            <div className="flex flex-col items-center justify-center p-12 sm:p-16 text-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <TableIcon className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                    Cargando datos del mes...
+                </h3>
+                <p className="text-sm text-gray-500">Por favor espera un momento</p>
+            </div>
+        );
     }
 
     // ... (la función renderCustomRow se mantiene igual) ...
@@ -294,14 +300,33 @@ export default function DetalleClient({initialData, initialCards}: DetalleClient
             </div>
 
             {/* --- TABLA GENÉRICA CON RENDERIZADO CUSTOM --- */}
-            <Table
-                columns={headerColumns} // <-- Pasa las columnas del header
-                data={processedRows}
-                keyExtractor={(row: ProcessedRow) =>
-                    row.type === 'CARD_SUMMARY' ? row.cardId : `${row.expense.place}-${row.expense.amount}-${Math.random()}`
-                }
-                renderRow={(row) => renderCustomRow(row as ProcessedRow)}
-            />
+            {processedRows.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 sm:p-16">
+                    <div className="flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                            <Receipt className="w-8 h-8 sm:w-10 sm:h-10 text-purple-600" />
+                        </div>
+                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                            No hay gastos en este mes
+                        </h3>
+                        <p className="text-sm sm:text-base text-gray-500 mb-6 max-w-md">
+                            Comienza agregando tu primer gasto para llevar un mejor control de tus finanzas este mes
+                        </p>
+                        <div className="text-xs text-gray-400 mt-2">
+                            Usa el botón "Agregar Gasto" en el header para comenzar
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <Table
+                    columns={headerColumns}
+                    data={processedRows}
+                    keyExtractor={(row: ProcessedRow) =>
+                        row.type === 'CARD_SUMMARY' ? row.cardId : `${row.expense.place}-${row.expense.amount}-${Math.random()}`
+                    }
+                    renderRow={(row) => renderCustomRow(row as ProcessedRow)}
+                />
+            )}
         </div>
     );
 }

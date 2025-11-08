@@ -6,6 +6,10 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { X, Plus } from 'lucide-react';
 import {FormInput, FormSelect} from "@/components/forms/components";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import Modal from "@/components/ui/Modal";
+import Spinner from "@/components/ui/Spinner";
+import { useState } from 'react';
 
 
 interface AddMonthFormProps {
@@ -47,10 +51,26 @@ export default function AddMonthForm({ onClose, onAddMonth }: AddMonthFormProps)
         },
     });
 
-    const onSubmit = (data: FormData) => {
-        onAddMonth(data.month, data.year, data.totalIncome);
-        reset();
-        onClose();
+    const [loading, setLoading] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'success'|'error'>('success');
+    const [modalMessage, setModalMessage] = useState('');
+
+    const onSubmit = async (data: FormData) => {
+        setLoading(true);
+        try {
+            await onAddMonth(data.month, data.year, data.totalIncome);
+            reset();
+            setModalType('success');
+            setModalMessage('¡Mes agregado correctamente!');
+            setModalOpen(true);
+            // onClose lo hará el usuario al cerrar modal
+        } catch (e) {
+            setModalType('error');
+            setModalMessage('Hubo un error al agregar el mes');
+            setModalOpen(true);
+        }
+        setLoading(false);
     };
 
     return (
@@ -120,16 +140,17 @@ export default function AddMonthForm({ onClose, onAddMonth }: AddMonthFormProps)
                         >
                             Cancelar
                         </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Agregar Mes</span>
-                        </button>
+                        <PrimaryButton type="submit" iconLeft={<Plus />} disabled={loading}>
+                            {loading ? <Spinner /> : 'Agregar Mes'}
+                        </PrimaryButton>
                     </div>
                 </form>
             </div>
+            <Modal open={modalOpen} onClose={() => { setModalOpen(false); onClose(); }} type={modalType}>
+                <div className="text-center font-medium text-base p-2">
+                    {modalMessage}
+                </div>
+            </Modal>
         </div>
     );
 }

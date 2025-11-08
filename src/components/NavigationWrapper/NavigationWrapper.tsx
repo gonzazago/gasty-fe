@@ -7,6 +7,7 @@ import { AddExpenseForm, Header, Sidebar } from '@/components';
 import { Card, ExpenseDataDetail } from '@/types/dashboard';
 import { addMonth } from "@/actions/expenses";
 import AddMonthForm from "@/components/forms/AddMonthForm";
+import { MonthProvider } from './MonthContext';
 
 interface NavigationWrapperProps {
     children: React.ReactNode;
@@ -51,8 +52,9 @@ export default function NavigationWrapper({
     // 2. Crea una lista optimizada solo con lo que el dropdown necesita
     const monthListForDropdown = initialMonths.map(month => ({
         id: month.id,
-        month: month.month // El string 'month' (ej: "Noviembre 2024")
+        label: month.month // ej: "Noviembre 2024"
     }));
+    const initialIndex = initialMonths.length > 0 ? initialMonths.length - 1 : 0;
 
 
     // 3. Handler para 'addMonth' (firma actualizada)
@@ -63,45 +65,47 @@ export default function NavigationWrapper({
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 relative overflow-hidden">
-            <Sidebar 
-                currentPath={pathname} 
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-            />
-
-            <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
-                isSidebarOpen ? 'sm:ml-64' : 'sm:ml-0'
-            }`}>
-                <Header
-                    title={title}
-                    subtitle={subtitle}
-                    onOpenAddMonth={() => setShowAddMonth(true)}
-                    onOpenAddExpense={() => setShowAddExpense(true)}
-                    isDashboardRoute={isDashboardRoute}
-                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        <MonthProvider monthList={monthListForDropdown} initialIndex={initialIndex}>
+            <div className="flex h-screen bg-gray-50 relative overflow-hidden">
+                <Sidebar
+                    currentPath={pathname}
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
                 />
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 min-w-0">
-                    {children}
-                </main>
+
+                <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
+                    isSidebarOpen ? 'sm:ml-64' : 'sm:ml-0'
+                }`}>
+                    <Header
+                        title={title}
+                        subtitle={subtitle}
+                        onOpenAddMonth={() => setShowAddMonth(true)}
+                        onOpenAddExpense={() => setShowAddExpense(true)}
+                        isDashboardRoute={isDashboardRoute}
+                        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                    />
+                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 min-w-0">
+                        {children}
+                    </main>
+                </div>
+
+                {/* Modal de Mes (usa el handler actualizado) */}
+                {showAddMonth && (
+                    <AddMonthForm
+                        onClose={() => setShowAddMonth(false)}
+                        onAddMonth={handleAddMonth}
+                    />
+                )}
+
+                {/* Modal de Gasto (usa la lista optimizada) */}
+                {showAddExpense && (
+                    <AddExpenseForm
+                        onClose={() => setShowAddExpense(false)}
+                        cards={initialCards}
+                        months={monthListForDropdown}
+                    />
+                )}
             </div>
-
-            {/* Modal de Mes (usa el handler actualizado) */}
-            {showAddMonth && (
-                <AddMonthForm
-                    onClose={() => setShowAddMonth(false)}
-                    onAddMonth={handleAddMonth}
-                />
-            )}
-
-            {/* Modal de Gasto (usa la lista optimizada) */}
-            {showAddExpense && (
-                <AddExpenseForm
-                    onClose={() => setShowAddExpense(false)}
-                    cards={initialCards}
-                    months={monthListForDropdown} // 4. Pasa la lista correcta
-                />
-            )}
-        </div>
+        </MonthProvider>
     );
 }

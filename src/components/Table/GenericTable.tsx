@@ -2,6 +2,7 @@
 'use client';
 
 import React, { Fragment } from 'react';
+import { Receipt, Plus } from 'lucide-react';
 
 // 1. Definir y EXPORTAR 'Column'
 export interface Column<T = Record<string, unknown>> {
@@ -77,8 +78,18 @@ export default function GenericTable<T>({
                 <tbody className="bg-white divide-y divide-gray-200">
                 {data.length === 0 ? (
                     <tr>
-                        <td colSpan={columns.length} className="p-6 text-center text-gray-500">
-                            No hay gastos en este mes.
+                        <td colSpan={columns.length} className="p-12 sm:p-16">
+                            <div className="flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <Receipt className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                                    No hay gastos registrados
+                                </h3>
+                                <p className="text-sm sm:text-base text-gray-500 mb-6 max-w-md">
+                                    Comienza agregando tu primer gasto para llevar un mejor control de tus finanzas
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 ) : (

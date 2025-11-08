@@ -7,6 +7,7 @@ import * as yup from 'yup';
 import { X, Plus } from 'lucide-react';
 import { Bank } from '@/types/dashboard';
 import {FormInput} from "@/components/forms/components";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 interface AddBankFormProps {
     onClose: () => void;
@@ -154,13 +155,9 @@ export default function AddBankForm({ onClose, onAddBank }: AddBankFormProps) {
                         >
                             Cancelar
                         </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Agregar Banco</span>
-                        </button>
+                        <PrimaryButton type="submit" iconLeft={<Plus />}>
+                            Agregar Banco
+                        </PrimaryButton>
                     </div>
                 </form>
             </div>

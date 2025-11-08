@@ -2,6 +2,8 @@
 
 import {Bell, Calendar, Plus, Search} from 'lucide-react';
 import {useRouter} from 'next/navigation';
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import { useMonth } from '@/components/NavigationWrapper/MonthContext';
 
 interface HeaderActionsProps {
     // Función para abrir el modal (ahora es obligatorio pasarla)
@@ -16,27 +18,30 @@ export default function HeaderActions({
                                           isDashboardRoute,
                                       }: HeaderActionsProps) {
     const router = useRouter();
+    const { monthList, currentMonthIndex, setCurrentMonthIndex } = useMonth();
 
     const handleNavigateToDetalle = () => {
         router.push('/detalle');
-    };
-
-    const handleThisMonth = () => {
-        console.log("Navegación 'Este mes' triggered");
     };
 
     return (
         <div className="w-full">
             {/* Top Section - User and Global Actions (Estructura de la primera barra) */}
             <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4 mb-4 sm:mb-6">
-                <button
-                    onClick={handleThisMonth}
-                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                {/* Selector de Mes Global */}
+                <select
+                    value={currentMonthIndex}
+                    onChange={(e) => setCurrentMonthIndex(Number(e.target.value))}
+                    className="text-xs sm:text-sm border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors font-medium bg-white"
+                    aria-label="Seleccionar mes"
                 >
-                    <Calendar className="w-4 h-4"/>
-                    <span className="whitespace-nowrap">Este mes</span>
-                </button>
-
+                    {monthList.map((mes, i) => (
+                        <option key={mes.id} value={i}>
+                            {mes.label}
+                        </option>
+                    ))}
+                </select>
+                {/* Otros iconos/botones (search, bell, avatar...) siguen igual */}
                 <div className="flex items-center space-x-2 sm:space-x-3">
                     <button className="p-2 hover:bg-gray-100 rounded-lg">
                         <Search className="w-5 h-5 text-gray-600"/>
@@ -71,31 +76,16 @@ export default function HeaderActions({
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
                     {/* Botón "Ver Detalle" (Sigue siendo condicional a /dashboard) */}
                     {isDashboardRoute && (
-                        <button
-                            onClick={handleNavigateToDetalle}
-                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 active:bg-purple-800 flex items-center space-x-2 transition-colors text-sm sm:text-base font-medium whitespace-nowrap"
-                        >
-                            <Plus className="w-4 h-4"/>
-                            <span>Ver Detalle</span>
-                        </button>
+                        <PrimaryButton iconLeft={<Plus />} onClick={handleNavigateToDetalle} className="">
+                            Ver Detalle
+                        </PrimaryButton>
                     )}
-
-                    <button
-                        onClick={onOpenAddMonth}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 active:bg-purple-800 flex items-center space-x-2 transition-colors text-sm sm:text-base font-medium whitespace-nowrap"
-                    >
-                        <Plus className="w-4 h-4"/>
-                        <span>Agregar Mes</span>
-                    </button>
-
-                    {/* BOTÓN AGREGAR GASTO (AHORA SIEMPRE VISIBLE) */}
-                    <button
-                        onClick={onOpenAddExpense}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 active:bg-purple-800 flex items-center space-x-2 transition-colors text-sm sm:text-base font-medium whitespace-nowrap"
-                    >
-                        <Plus className="w-4 h-4"/>
-                        <span>Agregar Gasto</span>
-                    </button>
+                    <PrimaryButton iconLeft={<Plus />} onClick={onOpenAddMonth} className="">
+                        Agregar Mes
+                    </PrimaryButton>
+                    <PrimaryButton iconLeft={<Plus />} onClick={onOpenAddExpense} className="">
+                        Agregar Gasto
+                    </PrimaryButton>
                 </div>
             </div>
         </div>

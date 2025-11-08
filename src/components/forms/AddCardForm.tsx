@@ -7,6 +7,10 @@ import * as yup from 'yup';
 import {Plus, X} from 'lucide-react';
 import {Bank, Card} from '@/types/dashboard';
 import {FormInput, FormSelect} from "@/components/forms/components";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import Modal from "@/components/ui/Modal";
+import Spinner from "@/components/ui/Spinner";
+import {useState} from 'react';
 
 
 interface AddCardFormProps {
@@ -67,22 +71,37 @@ export default function AddCardForm({onClose, onAddCard, banks}: AddCardFormProp
         }
     });
 
+    const [loading, setLoading] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'success'|'error'>('success');
+    const [modalMessage, setModalMessage] = useState('');
+
     const selectedBankId = watch('bankId');
     const selectedColor = watch('color');
     const selectedType = watch('type');
     const selectedBank = banks.find(bank => bank.id === selectedBankId);
 
-    const onSubmit = (data: FormData) => {
-        onAddCard({
-            bankId: data.bankId,
-            name: data.name,
-            type: data.type as 'visa' | 'mastercard' | 'amex' | 'other',
-            lastFourDigits: data.lastFourDigits,
-            color: data.color
-        });
-
-        reset();
-        onClose();
+    const onSubmit = async (data: FormData) => {
+        setLoading(true);
+        try {
+            await onAddCard({
+                bankId: data.bankId,
+                name: data.name,
+                type: data.type as 'visa' | 'mastercard' | 'amex' | 'other',
+                lastFourDigits: data.lastFourDigits,
+                color: data.color,
+            });
+            reset();
+            setModalType('success');
+            setModalMessage('¡Tarjeta agregada correctamente!');
+            setModalOpen(true);
+            // onClose lo hará el usuario al cerrar modal
+        } catch (e) {
+            setModalType('error');
+            setModalMessage('Hubo un error al agregar la tarjeta');
+            setModalOpen(true);
+        }
+        setLoading(false);
     };
 
     return (
@@ -232,16 +251,17 @@ export default function AddCardForm({onClose, onAddCard, banks}: AddCardFormProp
                         >
                             Cancelar
                         </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
-                        >
-                            <Plus className="w-4 h-4"/>
-                            <span>Agregar Tarjeta</span>
-                        </button>
+                        <PrimaryButton type="submit" iconLeft={<Plus />} disabled={loading}>
+                            {loading ? <Spinner /> : 'Agregar Tarjeta'}
+                        </PrimaryButton>
                     </div>
                 </form>
             </div>
+            <Modal open={modalOpen} onClose={() => { setModalOpen(false); onClose(); }} type={modalType}>
+                <div className="text-center font-medium text-base p-2">
+                    {modalMessage}
+                </div>
+            </Modal>
         </div>
     );
 }
