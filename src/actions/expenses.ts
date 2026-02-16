@@ -1,41 +1,61 @@
 'use server';
-import {revalidatePath} from 'next/cache'; // <-- Importar revalidatePath
-import {expenseDetailsByMonth} from '@/data/expenseDetailsData';
+import {revalidatePath} from 'next/cache';
 import {balanceData} from '@/data/mockData';
-import {BalanceData, ExpenseData, ExpenseDataDetail, ExpenseDetail, MetricData, MonthlyData} from '@/types/dashboard';
+import {BalanceData, ExpenseData, ExpenseDataDetail, ExpenseDetail, MetricData, MonthlyData, Card} from '@/types/dashboard';
+import {getAllCards} from './banksAndCards';
+import { apiClient } from '@/lib/api/client';
+import { API_CONFIG } from '@/lib/api/config';
+import { mapApiExpenseToExpenseDetail, mapExpenseDetailToApiExpense } from '@/lib/api/mappers';
+import { groupExpensesByMonth, filterExpensesByDateRange } from '@/lib/api/expenseHelpers';
+
+interface ApiExpense {
+  id: string;
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+  bankId?: string;
+  cardId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // Acción para obtener métricas del dashboard
 export async function getMetricsData(): Promise<MetricData[]> {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+        // Obtener todos los gastos de la API
+        const expenses = await apiClient.get<ApiExpense[]>(API_CONFIG.endpoints.expenses);
+        const expenseDetails = groupExpensesByMonth(expenses);
 
-    // 1. Obtener el mes más reciente de tus datos
-    const currentMonthData = expenseDetailsByMonth[expenseDetailsByMonth.length - 1];
+        // Obtener el mes más reciente
+        const currentMonthData = expenseDetails[expenseDetails.length - 1];
 
     if (!currentMonthData) return []; // Manejar si no hay datos
 
-    const totalIncome = currentMonthData.totalIncome;
+        const totalIncome = currentMonthData.totalIncome || 0;
     const totalExpenses = currentMonthData.totalCurrentMonth;
     const balance = totalIncome - totalExpenses;
 
     const prevBalance = currentMonthData.totalPreviousMonth
-        ? currentMonthData.totalIncome - currentMonthData.totalPreviousMonth // Asume mismo ingreso
+            ? totalIncome - currentMonthData.totalPreviousMonth
         : 0;
 
     const balanceChange = prevBalance > 0 ? ((balance - prevBalance) / prevBalance) * 100 : (balance > 0 ? 100 : 0);
 
-    // 2. Generar las Métricas dinámicamente
+        // Contar categorías únicas
+        const uniqueCategories = new Set(currentMonthData.expenses.map(e => e.category)).size;
+
     return [
         {
             title: 'Total Ingresos',
             value: `$${totalIncome.toLocaleString('es-AR')}`,
             currency: 'ARS',
             change: {
-                percentage: '0.0%', // No tenemos historial de ingresos
+                    percentage: '0.0%',
                 isPositive: true,
                 description: `Mes de ${currentMonthData.month}`
             },
-            details: {transactions: 0, categories: 0} // Podríamos calcular esto si quisiéramos
+                details: {transactions: 0, categories: 0}
         },
         {
             title: 'Total Gastos',
@@ -43,10 +63,10 @@ export async function getMetricsData(): Promise<MetricData[]> {
             currency: 'ARS',
             change: {
                 percentage: `${currentMonthData.totalVariation.toFixed(1)}%`,
-                isPositive: currentMonthData.totalVariation <= 0, // Menos gasto es positivo
+                    isPositive: currentMonthData.totalVariation <= 0,
                 description: 'vs mes anterior'
             },
-            details: {transactions: currentMonthData.expenses.length, categories: 0}
+                details: {transactions: currentMonthData.expenses.length, categories: uniqueCategories}
         },
         {
             title: 'Resto',
@@ -60,6 +80,10 @@ export async function getMetricsData(): Promise<MetricData[]> {
             details: {transactions: 0, categories: 0}
         }
     ];
+    } catch (error) {
+        console.error('Error al obtener métricas:', error);
+        return [];
+    }
 }
 
 // Acción para obtener datos de balance
@@ -72,20 +96,23 @@ export async function getBalanceData(): Promise<BalanceData[]> {
 
 // Acción para obtener datos de gastos por tipo
 export async function getExpenseData(): Promise<ExpenseData[]> {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+        // Obtener todos los gastos de la API
+        const expenses = await apiClient.get<ApiExpense[]>(API_CONFIG.endpoints.expenses);
+        const expenseDetails = groupExpensesByMonth(expenses);
 
-    // 1. Obtener gastos del mes más reciente
-    const currentMonthData = expenseDetailsByMonth[expenseDetailsByMonth.length - 1];
+        // Obtener el mes más reciente
+        const currentMonthData = expenseDetails[expenseDetails.length - 1];
     if (!currentMonthData) return [];
 
-    // 2. Agrupar gastos por categoría
+        // Agrupar gastos por categoría
     const expensesByCategory = new Map<string, number>();
     for (const expense of currentMonthData.expenses) {
         const currentAmount = expensesByCategory.get(expense.category) || 0;
         expensesByCategory.set(expense.category, currentAmount + expense.amount);
     }
 
-    // 3. Convertir al formato de gráfico (ExpenseData)
+        // Convertir al formato de gráfico (ExpenseData)
     const colors = ['#9333ea', '#c084fc', '#7e22ce', '#a855f7', '#6b21a8'];
     const totalExpenses = currentMonthData.totalCurrentMonth;
 
@@ -97,45 +124,63 @@ export async function getExpenseData(): Promise<ExpenseData[]> {
             name: name,
             value: value,
             color: colors[colorIndex % colors.length],
-            percentage: (value / totalExpenses) * 100
+                percentage: totalExpenses > 0 ? (value / totalExpenses) * 100 : 0
         });
         colorIndex++;
     }
 
     return expenseData;
+    } catch (error) {
+        console.error('Error al obtener datos de gastos:', error);
+        return [];
+    }
 }
 
 // Acción para obtener datos mensuales
 export async function getMonthlyData(): Promise<MonthlyData[]> {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+        // Obtener todos los gastos de la API
+        const expenses = await apiClient.get<ApiExpense[]>(API_CONFIG.endpoints.expenses);
+        const expenseDetails = groupExpensesByMonth(expenses);
 
-    // 1. Mapear todos los meses de tus datos
-    return expenseDetailsByMonth.map(monthData => ({
+        return expenseDetails.map(monthData => ({
         month: monthData.month.split(' ')[0].substring(0, 3), // "Octubre 2025" -> "Oct"
         expense: monthData.totalCurrentMonth,
-        budget: monthData.totalIncome // Asumimos que el ingreso es el presupuesto
+            budget: monthData.totalIncome || 0
     }));
+    } catch (error) {
+        console.error('Error al obtener datos mensuales:', error);
+        return [];
+    }
 }
 
 // Acción para obtener datos de gastos detallados por mes
 export async function getExpenseDetailsByMonth(): Promise<ExpenseDataDetail[]> {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    return expenseDetailsByMonth;
+    try {
+        // Obtener todos los gastos de la API
+        const expenses = await apiClient.get<ApiExpense[]>(API_CONFIG.endpoints.expenses);
+        return groupExpensesByMonth(expenses);
+    } catch (error) {
+        console.error('Error al obtener detalles de gastos por mes:', error);
+        return [];
+    }
 }
 
 // Acción para obtener datos de gastos detallados de un mes específico
 export async function getExpenseDetailsForMonth(monthIndex: number): Promise<ExpenseDataDetail> {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+        const expenseDetails = await getExpenseDetailsByMonth();
+        const data = expenseDetails[monthIndex];
 
-    const data = expenseDetailsByMonth[monthIndex];
     if (!data) {
         throw new Error(`No se encontraron datos para el mes ${monthIndex}`);
     }
 
     return data;
+    } catch (error) {
+        console.error('Error al obtener detalles del mes:', error);
+        throw error;
+    }
 }
 
 // Acción para obtener el total de gastos de un mes
@@ -145,13 +190,8 @@ export async function getTotalExpensesForMonth(monthIndex: number): Promise<{
     variable: number;
     installments: number;
 }> {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const data = expenseDetailsByMonth[monthIndex];
-    if (!data) {
-        throw new Error(`No se encontraron datos para el mes ${monthIndex}`);
-    }
+    try {
+        const data = await getExpenseDetailsForMonth(monthIndex);
 
     const total = data.totalCurrentMonth;
     const fixed = data.expenses
@@ -165,79 +205,107 @@ export async function getTotalExpensesForMonth(monthIndex: number): Promise<{
         .reduce((sum, expense) => sum + expense.amount, 0);
 
     return {total, fixed, variable, installments};
+    } catch (error) {
+        console.error('Error al obtener totales del mes:', error);
+        throw error;
+    }
 }
 
 // ✅ ACCIÓN 'addExpense' CORREGIDA
 export async function addExpense(monthId: string, expense: ExpenseDetail): Promise<void> {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 100));
-// 1. Encontrar el mes por ID (mucho más rápido y fiable)
-    const targetMonthData = expenseDetailsByMonth.find(
-        (data) => data.id === monthId
-    );
-
-    if (targetMonthData) {
-        // 2. Agregar el gasto
-        targetMonthData.expenses.push(expense);
-
-        // 3. Recalcular totales
-        const newTotal = targetMonthData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
-        targetMonthData.totalCurrentMonth = newTotal;
-
-        const prevTotal = targetMonthData.totalPreviousMonth;
-        if (prevTotal > 0) {
-            targetMonthData.totalVariation = ((newTotal - prevTotal) / prevTotal) * 100;
-        } else if (newTotal > 0) {
-            targetMonthData.totalVariation = 100;
-        } else {
-            targetMonthData.totalVariation = 0;
-        }
-
-    } else {
-        console.error(`Error: No se encontró el mes con ID "${monthId}".`);
-    }
-
-    // 6. Revalidar la ruta para que Next.js actualice la UI
+    try {
+        // Mapear el gasto al formato de la API
+        const apiExpenseData = mapExpenseDetailToApiExpense(expense, monthId);
+        
+        // Crear el gasto en la API
+        await apiClient.post<ApiExpense>(API_CONFIG.endpoints.expenses, apiExpenseData);
+        
+        // Revalidar las rutas para que Next.js actualice la UI
     revalidatePath('/detalle');
+    revalidatePath('/dashboard');
+    } catch (error) {
+        console.error('Error al agregar gasto:', error);
+        throw error;
+    }
 }
 
 
 export async function addMonth(monthIndex: number, year: number, totalIncome: number): Promise<void> {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // 1. Generar ID único y Nombre
-    const monthId = `month-${monthIndex + 1}-${year}`; // Ej: month-12-2025
-
-    const date = new Date(year, monthIndex);
-    const monthName = date.toLocaleString('es-ES', {month: 'long', timeZone: 'UTC'});
-    const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-    const monthString = `${capitalizedMonth} ${year}`;
-
-    // 2. Verificar si ya existe
-    if (expenseDetailsByMonth.some(m => m.id === monthId)) {
-        console.warn(`El mes con id ${monthId} ya existe.`);
-        return; // O manejar el error
-    }
-
-    // 3. Obtener datos del mes anterior
-    const lastMonth = expenseDetailsByMonth[expenseDetailsByMonth.length - 1];
-    const previousMonthTotal = lastMonth ? lastMonth.totalCurrentMonth : 0;
-    const variation = previousMonthTotal > 0 ? -100 : 0;
-
-    // 4. Crear nuevo mes con ID
-    const newMonth: ExpenseDataDetail = {
-        id: monthId, // <-- ID asignado
-        month: monthString,
-        totalIncome: totalIncome,
-        totalCurrentMonth: 0,
-        totalPreviousMonth: previousMonthTotal,
-        totalVariation: variation,
-        expenses: [],
-    };
-
-    expenseDetailsByMonth.push(newMonth);
-    // 5. Revalidar la ruta
+    // Nota: El backend no tiene un concepto de "mes" como entidad separada.
+    // Los meses se generan automáticamente al agrupar gastos por fecha.
+    // Esta función ahora solo revalida las rutas, ya que el mes se creará
+    // automáticamente cuando se agreguen gastos para ese período.
+    
+    // TODO: Si se necesita almacenar totalIncome por mes, se podría:
+    // 1. Agregar un endpoint en el backend para configuraciones de mes
+    // 2. O almacenar el totalIncome en algún lugar (localStorage, base de datos separada, etc.)
+    
     revalidatePath('/detalle');
+}
+
+// Acción para obtener datos de evolución de gastos en cuotas por tarjeta
+export async function getInstallmentEvolutionData(): Promise<{ month: string; [cardName: string]: string | number }[]> {
+    try {
+    // 1. Obtener todas las tarjetas
+    const cards = await getAllCards();
+    const cardMap = new Map<string, Card>();
+    cards.forEach(card => {
+        cardMap.set(card.id, card);
+    });
+
+        // 2. Obtener todos los gastos de la API
+        const expenses = await apiClient.get<ApiExpense[]>(API_CONFIG.endpoints.expenses);
+        const expenseDetails = groupExpensesByMonth(expenses);
+
+        // 3. Procesar gastos en cuotas por mes y tarjeta
+    const monthlyData = new Map<string, Map<string, number>>(); // month -> cardName -> amount
+
+        expenseDetails.forEach(monthData => {
+        const monthKey = monthData.month.split(' ')[0].substring(0, 3); // "Octubre 2025" -> "Oct"
+        const cardAmounts = new Map<string, number>();
+
+        monthData.expenses.forEach(expense => {
+            // Solo procesar gastos que tienen cuotas (split) y están asociados a una tarjeta
+                // Nota: El backend no tiene el campo split aún, así que por ahora solo filtramos por cardId
+            if (expense.split !== null && expense.cardId) {
+                const card = cardMap.get(expense.cardId);
+                if (card) {
+                    const currentAmount = cardAmounts.get(card.name) || 0;
+                    // Sumar el monto de la cuota (ya está dividido por el total de cuotas)
+                    cardAmounts.set(card.name, currentAmount + expense.amount);
+                }
+            }
+        });
+
+        if (cardAmounts.size > 0) {
+            monthlyData.set(monthKey, cardAmounts);
+        }
+    });
+
+        // 4. Obtener todos los meses únicos y todas las tarjetas que tienen datos
+    const months = Array.from(monthlyData.keys());
+    const allCardNames = new Set<string>();
+    monthlyData.forEach(cardAmounts => {
+        cardAmounts.forEach((_, cardName) => {
+            allCardNames.add(cardName);
+        });
+    });
+
+        // 5. Construir el array de datos para el gráfico
+    const chartData = months.map(month => {
+        const dataPoint: { month: string; [cardName: string]: string | number } = { month };
+        const cardAmounts = monthlyData.get(month);
+        
+        allCardNames.forEach(cardName => {
+            dataPoint[cardName] = cardAmounts?.get(cardName) || 0;
+        });
+
+        return dataPoint;
+    });
+
+    return chartData;
+    } catch (error) {
+        console.error('Error al obtener datos de evolución de cuotas:', error);
+        return [];
+    }
 }

@@ -4,6 +4,7 @@ import {useState} from 'react';
 import {Building2, CreditCard, Edit, Plus, Trash2} from 'lucide-react';
 import {Bank, Card} from '@/types/dashboard';
 import {AddBankForm, AddCardForm} from '@/components/forms';
+import { createBank } from '@/actions/banksAndCards';
 
 interface BanksAndCardsManagerProps {
     initialBanks: Bank[];
@@ -36,10 +37,7 @@ export default function BanksAndCardsManager({initialBanks, initialCards,}: Bank
 
 
     const onAddBank = async (bank: Omit<Bank, 'id' | 'createdAt'>) => {
-
-        // Simulación de una Server Action + actualización de UI
-        // ✅ CORREGIDO: Convertido a string
-        const newBank = {...bank, id: crypto.randomUUID(), createdAt: new Date().toISOString()};
+        const newBank = await createBank(bank);
         setBanks(prev => [...prev, newBank]);
         setShowAddBank(false);
     };

@@ -1,86 +1,160 @@
 'use server';
 
-import { banksData, cardsData, getCardsByBank, getBankById, getCardById } from '@/data/banksAndCardsData';
 import { Bank, Card } from '@/types/dashboard';
+import { apiClient } from '@/lib/api/client';
+import { API_CONFIG } from '@/lib/api/config';
+import { mapApiBankToBank, mapBankToApiBank, mapApiCardToCard, mapCardToApiCard } from '@/lib/api/mappers';
 
 // Acciones para Bancos
 export async function getAllBanks(): Promise<Bank[]> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  return banksData;
+  try {
+    console.log('getAllBanks');
+    const apiBanks = await apiClient.get<Array<{
+      id: string;
+      name: string;
+      balance: number;
+      createdAt: string;
+      updatedAt: string;
+    }>>(API_CONFIG.endpoints.banks);
+    
+    // Mapear bancos de la API al formato del frontend
+    // Por ahora usamos colores por defecto, pero esto se puede mejorar
+    const colors = ['#E31837', '#004481', '#0066CC', '#003366', '#9333ea'];
+    return apiBanks.map((bank, index) => 
+      mapApiBankToBank(bank, colors[index % colors.length])
+    );
+  } catch (error) {
+    console.error('Error al obtener bancos:', error);
+    // En caso de error, retornar array vacío o lanzar el error
+    throw error;
+  }
 }
 
 export async function getBank(bankId: string): Promise<Bank | undefined> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  return getBankById(bankId);
+  try {
+    const banks = await getAllBanks();
+    return banks.find(bank => bank.id === bankId);
+  } catch (error) {
+    console.error('Error al obtener banco:', error);
+    return undefined;
+  }
 }
 
 export async function createBank(bankData: Omit<Bank, 'id' | 'createdAt'>): Promise<Bank> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 200));
-  
-  const newBank: Bank = {
-    ...bankData,
-    id: `bank-${Date.now()}`,
-    createdAt: new Date().toISOString()
-  };
-  
-  // En una implementación real, aquí se guardaría en la base de datos
-  // banksData.push(newBank);
-  
-  return newBank;
+  try {
+    console.log('createBank');
+    const apiBankData = mapBankToApiBank(bankData);
+    const createdBank = await apiClient.post<{
+      id: string;
+      name: string;
+      balance: number;
+      createdAt: string;
+      updatedAt: string;
+    }>(API_CONFIG.endpoints.banks, apiBankData);
+    
+    return mapApiBankToBank(createdBank, bankData.color);
+  } catch (error) {
+    console.error('Error al crear banco:', error);
+    throw error;
+  }
 }
 
 // Acciones para Tarjetas
 export async function getAllCards(): Promise<Card[]> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 100));
+  try {
+    const apiCards = await apiClient.get<Array<{
+      id: string;
+      bankId: string;
+      name: string;
+      type: 'visa' | 'mastercard' | 'amex' | 'other';
+      lastFourDigits: string;
+      color: string;
+      createdAt: string;
+      updatedAt: string;
+    }>>(API_CONFIG.endpoints.cards);
   
-  return cardsData;
+    return apiCards.map(card => mapApiCardToCard(card));
+  } catch (error) {
+    console.error('Error al obtener tarjetas:', error);
+    throw error;
+  }
 }
 
 export async function getCardsByBankId(bankId: string): Promise<Card[]> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  return getCardsByBank(bankId);
+  try {
+    const apiCards = await apiClient.get<Array<{
+      id: string;
+      bankId: string;
+      name: string;
+      type: 'visa' | 'mastercard' | 'amex' | 'other';
+      lastFourDigits: string;
+      color: string;
+      createdAt: string;
+      updatedAt: string;
+    }>>(`${API_CONFIG.endpoints.cards}/bank/${bankId}`);
+    
+    return apiCards.map(card => mapApiCardToCard(card));
+  } catch (error) {
+    console.error('Error al obtener tarjetas por banco:', error);
+    throw error;
+  }
 }
 
 export async function getCard(cardId: string): Promise<Card | undefined> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 100));
+  try {
+    const apiCard = await apiClient.get<{
+      id: string;
+      bankId: string;
+      name: string;
+      type: 'visa' | 'mastercard' | 'amex' | 'other';
+      lastFourDigits: string;
+      color: string;
+      createdAt: string;
+      updatedAt: string;
+    }>(`${API_CONFIG.endpoints.cards}/${cardId}`);
   
-  return getCardById(cardId);
+    return mapApiCardToCard(apiCard);
+  } catch (error) {
+    console.error('Error al obtener tarjeta:', error);
+    return undefined;
+  }
 }
 
 export async function createCard(cardData: Omit<Card, 'id' | 'createdAt'>): Promise<Card> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 200));
-  
-  const newCard: Card = {
-    ...cardData,
-    id: `card-${Date.now()}`,
-    createdAt: new Date().toISOString()
-  };
-  
-  // En una implementación real, aquí se guardaría en la base de datos
-  // cardsData.push(newCard);
-  
-  return newCard;
+  try {
+    const apiCardData = mapCardToApiCard(cardData);
+    const createdCard = await apiClient.post<{
+      id: string;
+      bankId: string;
+      name: string;
+      type: 'visa' | 'mastercard' | 'amex' | 'other';
+      lastFourDigits: string;
+      color: string;
+      createdAt: string;
+      updatedAt: string;
+    }>(API_CONFIG.endpoints.cards, apiCardData);
+    
+    return mapApiCardToCard(createdCard);
+  } catch (error) {
+    console.error('Error al crear tarjeta:', error);
+    throw error;
+  }
 }
 
 // Acción para obtener datos completos de banks con sus tarjetas
 export async function getBanksWithCards(): Promise<(Bank & { cards: Card[] })[]> {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 150));
+  try {
+    const banks = await getAllBanks();
+    const cards = await getAllCards();
   
-  return banksData.map(bank => ({
+    return banks.map(bank => ({
     ...bank,
-    cards: getCardsByBank(bank.id)
+      cards: cards.filter(card => card.bankId === bank.id)
   }));
+  } catch (error) {
+    console.error('Error al obtener bancos con tarjetas:', error);
+    throw error;
+  }
 }
 
 // Acción para obtener estadísticas de uso de tarjetas

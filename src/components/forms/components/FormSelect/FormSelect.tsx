@@ -8,7 +8,7 @@ type FormSelectProps<TFormValues extends FieldValues> = {
     register: UseFormRegister<TFormValues>;
     errors: FieldErrors<TFormValues>;
     registerOptions?: Parameters<UseFormRegister<TFormValues>>[1];
-    children: React.ReactNode; // Para los <option>
+    options?: { value: string | number; label: string }[];
 } & Omit<React.ComponentProps<'select'>, 'name'>;
 
 // 3. Usa FieldValues aquí también
@@ -18,7 +18,7 @@ export default function FormSelect<TFormValues extends FieldValues>({
                                                                         register,
                                                                         errors,
                                                                         registerOptions,
-                                                                        children,
+                                                                        options,
                                                                         className,
                                                                         ...props
                                                                     }: FormSelectProps<TFormValues>) {
@@ -45,7 +45,11 @@ export default function FormSelect<TFormValues extends FieldValues>({
           ${className || ''}
         `}
             >
-                {children}
+                {options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
             </select>
             {hasError && (
                 <p className="text-red-500 text-xs sm:text-sm mt-1">

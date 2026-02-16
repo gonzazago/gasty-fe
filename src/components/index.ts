@@ -7,6 +7,7 @@ export {default as Navigation} from './NavigationWrapper';
 export { default as BalanceChart } from './BalanceChart';
 export { default as ExpenseChart } from './ExpenseChart';
 export { default as MonthlyExpenseChart } from './MonthlyExpenseChart';
+export { default as InstallmentEvolutionChart } from './InstallmentEvolutionChart';
 
 // Card Components
 export { default as MetricCard } from './MetricCard';

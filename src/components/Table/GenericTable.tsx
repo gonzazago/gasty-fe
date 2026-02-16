@@ -18,6 +18,7 @@ interface GenericTableProps<T> {
     columns: Column<T>[];
     data: T[];
     keyExtractor: (item: T) => string; // Clave para identificar cada fila
+    onRowClick?: (item: T) => void; // Manejador para el clic en la fila
     renderRow?: (item: T, columns: Column<T>[]) => React.ReactNode; // Render custom
 }
 
@@ -34,12 +35,16 @@ export default function GenericTable<T>({
                                             columns,
                                             data,
                                             keyExtractor,
+                                            onRowClick,
                                             renderRow
                                         }: GenericTableProps<T>) {
 
     // --- Renderizador de Fila Por Defecto ---
     const defaultRowRender = (item: T) => (
-        <tr key={keyExtractor(item)} className="hover:bg-gray-50">
+        <tr key={keyExtractor(item)}
+            className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''}`}
+            onClick={() => onRowClick?.(item)}
+        >
             {columns.map((col) => {
                 const value = getValue(item, col);
                 return (

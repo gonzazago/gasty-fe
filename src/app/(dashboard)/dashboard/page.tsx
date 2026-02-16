@@ -3,22 +3,27 @@ import {
     MetricCard,
     BalanceChart,
     ExpenseChart,
-    MonthlyExpenseChart
+    MonthlyExpenseChart,
+    InstallmentEvolutionChart
 } from '@/components';
 import {
     getMetricsData,
     getBalanceData,
     getExpenseData,
-    getMonthlyData
+    getMonthlyData,
+    getInstallmentEvolutionData
 } from '@/actions/expenses';
+import { getAllCards } from '@/actions/banksAndCards';
 
 export default async function Dashboard() {
     // 1. Obtener datos (ahora son dinámicos)
-    const [metricsData, balanceData, expenseData, monthlyData] = await Promise.all([
+    const [metricsData, balanceData, expenseData, monthlyData, installmentData, cards] = await Promise.all([
         getMetricsData(),
         getBalanceData(),
         getExpenseData(),
-        getMonthlyData()
+        getMonthlyData(),
+        getInstallmentEvolutionData(),
+        getAllCards()
     ]);
 
     const totalExpenseString = metricsData.find(m => m.title === 'Total Gastos')?.value || '$0.00';
@@ -37,8 +42,12 @@ export default async function Dashboard() {
                 <ExpenseChart data={expenseData} totalExpense={totalExpenseString} />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <MonthlyExpenseChart data={monthlyData} />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <InstallmentEvolutionChart data={installmentData} cards={cards} />
             </div>
         </div>
     );

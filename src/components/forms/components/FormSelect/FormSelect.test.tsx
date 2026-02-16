@@ -20,9 +20,8 @@ describe('FormSelect', () => {
             name="testField"
             register={methods.register}
             errors={methods.formState.errors}
-          >
-            <option value="">Select...</option>
-          </FormSelect>
+            options={[]}
+          />
         )}
       </FormWrapper>
     );
@@ -39,9 +38,8 @@ describe('FormSelect', () => {
             name="testField"
             register={methods.register}
             errors={methods.formState.errors}
-          >
-            <option value="">Select...</option>
-          </FormSelect>
+            options={[]}
+          />
         )}
       </FormWrapper>
     );
@@ -60,10 +58,11 @@ describe('FormSelect', () => {
             name="testField"
             register={methods.register}
             errors={methods.formState.errors}
-          >
-            <option value="option1">Option 1</option>
-            <option value="option2">Option 2</option>
-          </FormSelect>
+            options={[
+              { value: 'option1', label: 'Option 1' },
+              { value: 'option2', label: 'Option 2' },
+            ]}
+          />
         )}
       </FormWrapper>
     );
@@ -81,9 +80,8 @@ describe('FormSelect', () => {
             name="testField"
             register={methods.register}
             errors={{ testField: { type: 'required', message: 'This field is required' } }}
-          >
-            <option value="">Select...</option>
-          </FormSelect>
+            options={[]}
+          />
         )}
       </FormWrapper>
     );
